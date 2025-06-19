@@ -191,7 +191,7 @@ variable "mackerel_default_api_key" {
 }
 
 variable "mackerel_parameter_prefix" {
-  description = "MackerelエージェントのParameter Storeパラメータ名プレフィックス（空の場合は自動生成: /{project}/{env}/mackerel/）"
+  description = "MackerelエージェントのParameter Storeパラメータ名プレフィックス（空の場合は自動生成: /{project}/{env}/config/mackerel/）"
   type        = string
   default     = ""
 }

@@ -101,18 +101,7 @@ else
     touch /etc/sysconfig/mackerel-agent
 fi
 
-# AUTO_RETIREMENT設定の追加
-%{ if mackerel_auto_retirement != "" }
-echo "AUTO_RETIREMENT=${mackerel_auto_retirement}" >> /etc/sysconfig/mackerel-agent
-log "AUTO_RETIREMENT set to: ${mackerel_auto_retirement}"
-%{ else }
-if AUTO_RETIREMENT_VALUE=$(aws ssm get-parameter --name "${mackerel_parameter_prefix}auto-retirement" --query 'Parameter.Value' --output text 2>/dev/null); then
-    echo "AUTO_RETIREMENT=$AUTO_RETIREMENT_VALUE" >> /etc/sysconfig/mackerel-agent
-    log "AUTO_RETIREMENT loaded from Parameter Store: $AUTO_RETIREMENT_VALUE"
-else
-    log "AUTO_RETIREMENT parameter not found in Parameter Store, skipping"
-fi
-%{ endif }
+
 
 # エージェント設定ファイルの取得
 if aws ssm get-parameter --name "${mackerel_parameter_prefix}api-conf" --query 'Parameter.Value' --output text > /etc/mackerel-agent/mackerel-agent.conf 2>/dev/null; then

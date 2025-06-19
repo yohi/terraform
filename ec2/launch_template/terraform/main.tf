@@ -206,9 +206,9 @@ resource "aws_launch_template" "main" {
     aws_region                = var.aws_region
     ecs_cluster_name         = var.ecs_cluster_name != "" ? var.ecs_cluster_name : "${var.project}-${var.env}-ecs"
     ecs_app_type             = var.app != "" ? upper(var.app) : ""
-    cloudwatch_agent_config  = var.cloudwatch_agent_config != "" ? var.cloudwatch_agent_config : "AmazonCloudWatch-Agent_${var.project}-ecs"
+    cloudwatch_agent_config  = var.cloudwatch_agent_config != "" ? var.cloudwatch_agent_config : "/${var.project}/${var.env}/config/cloudwatch/agent"
     mackerel_api_key         = var.mackerel_api_key
-    mackerel_parameter_prefix = var.mackerel_parameter_prefix != "" ? var.mackerel_parameter_prefix : "/${var.project}/${var.env}/mackerel/"
+    mackerel_parameter_prefix = var.mackerel_parameter_prefix != "" ? var.mackerel_parameter_prefix : "/${var.project}/${var.env}/config/mackerel/"
     mackerel_auto_retirement = var.mackerel_auto_retirement
     ctop_version             = var.ctop_version
     custom_user_data         = var.custom_user_data
@@ -267,7 +267,7 @@ resource "aws_launch_template" "main" {
 resource "aws_ssm_parameter" "mackerel_api_key" {
   count = var.create_parameter_store && local.effective_mackerel_api_key != "" ? 1 : 0
 
-  name  = "${var.mackerel_parameter_prefix != "" ? var.mackerel_parameter_prefix : "/${var.project}/${var.env}/mackerel/"}api-key"
+  name  = "${var.mackerel_parameter_prefix != "" ? var.mackerel_parameter_prefix : "/${var.project}/${var.env}/config/mackerel/"}api-key"
   type  = "SecureString"
   value = local.effective_mackerel_api_key
 
@@ -285,7 +285,7 @@ resource "aws_ssm_parameter" "mackerel_api_key" {
 resource "aws_ssm_parameter" "mackerel_display_name" {
   count = var.create_parameter_store && local.effective_mackerel_display_name != "" ? 1 : 0
 
-  name  = "${var.mackerel_parameter_prefix != "" ? var.mackerel_parameter_prefix : "/${var.project}/${var.env}/mackerel/"}display-name"
+  name  = "${var.mackerel_parameter_prefix != "" ? var.mackerel_parameter_prefix : "/${var.project}/${var.env}/config/mackerel/"}display-name"
   type  = "String"
   value = local.effective_mackerel_display_name
 
@@ -301,7 +301,7 @@ resource "aws_ssm_parameter" "mackerel_display_name" {
 resource "aws_ssm_parameter" "mackerel_organization" {
   count = var.create_parameter_store && var.mackerel_organization != "" ? 1 : 0
 
-  name  = "${var.mackerel_parameter_prefix != "" ? var.mackerel_parameter_prefix : "/${var.project}/${var.env}/mackerel/"}organization"
+  name  = "${var.mackerel_parameter_prefix != "" ? var.mackerel_parameter_prefix : "/${var.project}/${var.env}/config/mackerel/"}organization"
   type  = "String"
   value = var.mackerel_organization
 
@@ -317,7 +317,7 @@ resource "aws_ssm_parameter" "mackerel_organization" {
 resource "aws_ssm_parameter" "mackerel_roles" {
   count = var.create_parameter_store && local.effective_mackerel_roles != "" ? 1 : 0
 
-  name  = "${var.mackerel_parameter_prefix != "" ? var.mackerel_parameter_prefix : "/${var.project}/${var.env}/mackerel/"}roles"
+  name  = "${var.mackerel_parameter_prefix != "" ? var.mackerel_parameter_prefix : "/${var.project}/${var.env}/config/mackerel/"}roles"
   type  = "String"
   value = local.effective_mackerel_roles
 
@@ -333,7 +333,7 @@ resource "aws_ssm_parameter" "mackerel_roles" {
 resource "aws_ssm_parameter" "mackerel_auto_retirement" {
   count = var.create_parameter_store && var.mackerel_auto_retirement != "" ? 1 : 0
 
-  name  = "${var.mackerel_parameter_prefix != "" ? var.mackerel_parameter_prefix : "/${var.project}/${var.env}/mackerel/"}auto-retirement"
+  name  = "${var.mackerel_parameter_prefix != "" ? var.mackerel_parameter_prefix : "/${var.project}/${var.env}/config/mackerel/"}auto-retirement"
   type  = "String"
   value = var.mackerel_auto_retirement
 
@@ -349,7 +349,7 @@ resource "aws_ssm_parameter" "mackerel_auto_retirement" {
 resource "aws_ssm_parameter" "mackerel_agent_config" {
   count = var.create_parameter_store && local.final_mackerel_config != "" ? 1 : 0
 
-  name  = "${var.mackerel_parameter_prefix != "" ? var.mackerel_parameter_prefix : "/${var.project}/${var.env}/mackerel/"}api-conf"
+  name  = "${var.mackerel_parameter_prefix != "" ? var.mackerel_parameter_prefix : "/${var.project}/${var.env}/config/mackerel/"}api-conf"
   type  = "String"
   value = local.final_mackerel_config
 
@@ -365,7 +365,7 @@ resource "aws_ssm_parameter" "mackerel_agent_config" {
 resource "aws_ssm_parameter" "mackerel_sysconfig_config" {
   count = var.create_parameter_store && local.final_mackerel_sysconfig != "" ? 1 : 0
 
-  name  = "${var.mackerel_parameter_prefix != "" ? var.mackerel_parameter_prefix : "/${var.project}/${var.env}/mackerel/"}agent"
+  name  = "${var.mackerel_parameter_prefix != "" ? var.mackerel_parameter_prefix : "/${var.project}/${var.env}/config/mackerel/"}agent"
   type  = "String"
   value = local.final_mackerel_sysconfig
 
@@ -381,7 +381,7 @@ resource "aws_ssm_parameter" "mackerel_sysconfig_config" {
 resource "aws_ssm_parameter" "cloudwatch_agent_config" {
   count = var.create_parameter_store && local.final_cloudwatch_config != "" ? 1 : 0
 
-  name  = var.cloudwatch_agent_config != "" ? var.cloudwatch_agent_config : "AmazonCloudWatch-Agent_${var.project}-ecs"
+  name  = var.cloudwatch_agent_config != "" ? var.cloudwatch_agent_config : "/${var.project}/${var.env}/config/cloudwatch/agent"
   type  = "String"
   value = local.final_cloudwatch_config
 
