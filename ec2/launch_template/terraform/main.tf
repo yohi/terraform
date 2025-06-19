@@ -196,6 +196,11 @@ resource "aws_launch_template" "main" {
     }
   }
 
+  # メタデータオプション（IMDSv2強制）
+  metadata_options {
+    http_tokens = "required"
+  }
+
   # ユーザーデータ
   user_data = base64encode(templatefile("${path.module}/../templates/scripts/user_data.sh", {
     aws_region                = var.aws_region

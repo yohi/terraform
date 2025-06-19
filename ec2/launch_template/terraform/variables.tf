@@ -43,9 +43,9 @@ variable "key_name" {
 }
 
 variable "ssh_cidr_blocks" {
-  description = "SSH接続を許可するCIDRブロックのリスト"
+  description = "SSH接続を許可するCIDRブロックのリスト（セキュリティのため、明示的に信頼できるIPアドレス範囲を指定してください）"
   type        = list(string)
-  default     = ["0.0.0.0/0"]  # セキュリティ上、特定のIPアドレスに制限することを推奨
+  default     = []  # セキュリティのため、デフォルトは空リスト。必要に応じて特定のIPアドレス範囲を明示的に指定する
 }
 
 variable "associate_public_ip" {
