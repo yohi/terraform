@@ -14,7 +14,7 @@ data "aws_ami" "amazon_linux" {
 
   filter {
     name   = "name"
-    values = ["amzn2-ami-ecs-hvm-*-x86_64-ebs"]
+    values = var.ami_name_filter
   }
 
   filter {
@@ -206,8 +206,8 @@ resource "aws_launch_template" "main" {
     aws_region                = var.aws_region
     ecs_cluster_name         = var.ecs_cluster_name != "" ? var.ecs_cluster_name : "${var.project}-${var.env}-ecs"
     ecs_app_type             = var.app != "" ? upper(var.app) : ""
-    cloudwatch_agent_config  = var.cloudwatch_agent_config != "" ? var.cloudwatch_agent_config : "/${var.project}/${var.env}/config/cloudwatch/agent"
-    mackerel_api_key         = var.mackerel_api_key
+    cloudwatch_agent_config  = var.cloudwatch_agent_config != "" ? var.cloudwatch_agent_config : ""
+    mackerel_api_key         = local.effective_mackerel_api_key
     mackerel_parameter_prefix = var.mackerel_parameter_prefix != "" ? var.mackerel_parameter_prefix : "/${var.project}/${var.env}/config/mackerel/"
     mackerel_auto_retirement = var.mackerel_auto_retirement
     ctop_version             = var.ctop_version
