@@ -37,7 +37,7 @@ echo ECS_NUM_IMAGES_DELETE_PER_CYCLE=10 >> /etc/ecs/ecs.config
 echo ECS_CONTAINER_STOP_TIMEOUT=30s >> /etc/ecs/ecs.config
 
 %{ if ecs_app_type != "" }
-echo ECS_INSTANCE_ATTRIBUTES='{"APP_TYPE": "${ecs_app_type}"}' >> /etc/ecs/ecs.config
+echo ECS_INSTANCE_ATTRIBUTES="{\"APP_TYPE\": \"${ecs_app_type}\"}" >> /etc/ecs/ecs.config
 log "ECS instance attributes set for APP_TYPE: ${ecs_app_type}"
 %{ endif }
 
@@ -74,10 +74,22 @@ fi
 # ==================================================
 
 %{ if cloudwatch_agent_config != "" }
-log "Starting CloudWatch Agent with config: ${cloudwatch_agent_config}"
-sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
-    -a fetch-config -m ec2 -s -c ssm:${cloudwatch_agent_config}
-log "CloudWatch Agent started successfully"
+log "Configuring CloudWatch Agent with config: ${cloudwatch_agent_config}"
+
+# SSMパラメータの存在確認
+if aws ssm get-parameter --name "${cloudwatch_agent_config}" --query 'Parameter.Value' --output text > /dev/null 2>&1; then
+    log "CloudWatch Agent configuration found in Parameter Store"
+
+    # CloudWatch Agent設定の取得と開始
+    if sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+        -a fetch-config -m ec2 -s -c ssm:${cloudwatch_agent_config}; then
+        log "CloudWatch Agent started successfully"
+    else
+        log "ERROR: Failed to start CloudWatch Agent with configuration from Parameter Store"
+    fi
+else
+    log "WARNING: CloudWatch Agent configuration parameter '${cloudwatch_agent_config}' not found in Parameter Store, skipping CloudWatch Agent configuration"
+fi
 %{ endif }
 
 # ==================================================
