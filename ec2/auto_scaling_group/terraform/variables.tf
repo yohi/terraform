@@ -140,6 +140,12 @@ variable "notification_email_addresses" {
   default     = []
 }
 
+variable "sns_kms_key_id" {
+  description = "SNSトピックの暗号化に使用するKMS key ID (ARN, key ID, または alias)"
+  type        = string
+  default     = null
+}
+
 variable "notification_types" {
   description = "通知タイプのリスト"
   type        = list(string)
@@ -472,6 +478,7 @@ variable "common_tags" {
 variable "additional_tags" {
   description = "オートスケーリンググループに追加するタグのマップ（プロパゲート設定を含む）"
   type = map(object({
+    value               = string
     propagate_at_launch = bool
   }))
   default = {}

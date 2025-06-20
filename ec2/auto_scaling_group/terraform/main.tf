@@ -15,6 +15,21 @@ data "aws_subnets" "default" {
   }
 }
 
+# 指定されたAZのデフォルトVPCサブネット取得（availability_zonesが指定されている場合）
+data "aws_subnets" "default_filtered" {
+  count = length(var.availability_zones) > 0 ? 1 : 0
+
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.default.id]
+  }
+
+  filter {
+    name   = "availability-zone"
+    values = var.availability_zones
+  }
+}
+
 # アベイラビリティーゾーン取得
 data "aws_availability_zones" "available" {
   state = "available"
@@ -31,8 +46,11 @@ locals {
   # その他のリソース名プレフィックス
   name_prefix = var.app != "" ? "${var.project}-${var.env}-${var.app}" : "${var.project}-${var.env}"
 
+  # アベイラビリティーゾーンの決定（指定されている場合は使用、なければ利用可能なすべてのAZ）
+  availability_zones = length(var.availability_zones) > 0 ? var.availability_zones : data.aws_availability_zones.available.names
+
   # サブネットの決定（指定されている場合は使用、なければデフォルトVPCのサブネット）
-  subnet_ids = length(var.subnet_ids) > 0 ? var.subnet_ids : data.aws_subnets.default.ids
+  subnet_ids = length(var.subnet_ids) > 0 ? var.subnet_ids : (length(var.availability_zones) > 0 ? data.aws_subnets.default_filtered[0].ids : data.aws_subnets.default.ids)
 
   # 通知エンドポイントの決定
   notification_endpoints = length(var.notification_email_addresses) > 0 ? var.notification_email_addresses : []
@@ -45,7 +63,8 @@ locals {
 resource "aws_sns_topic" "asg_notifications" {
   count = var.enable_notifications ? 1 : 0
 
-  name = "${local.name_prefix}-asg-notifications"
+  name            = "${local.name_prefix}-asg-notifications"
+  kms_master_key_id = var.sns_kms_key_id
 
   tags = merge(
     var.common_tags,
@@ -71,6 +90,7 @@ resource "aws_sns_topic_subscription" "email_notifications" {
 resource "aws_autoscaling_group" "main" {
   name                = local.asg_name
   vpc_zone_identifier = local.subnet_ids
+  availability_zones  = length(var.subnet_ids) == 0 ? local.availability_zones : null
 
   # 起動テンプレート設定
   launch_template {
@@ -128,7 +148,7 @@ resource "aws_autoscaling_group" "main" {
     for_each = var.additional_tags
     content {
       key                 = tag.key
-      value               = tag.value
+      value               = tag.value.value
       propagate_at_launch = tag.value.propagate_at_launch
     }
   }
