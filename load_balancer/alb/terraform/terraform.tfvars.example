@@ -1,0 +1,158 @@
+# ==================================================
+# プロジェクト基本設定
+# ==================================================
+
+# AWSリージョン
+aws_region = "ap-northeast-1"
+
+# プロジェクト名
+project = "myproject"
+
+# 環境名（dev, stg, prodなど）
+env = "dev"
+
+# アプリケーション名（空文字列の場合は省略される）
+app = ""
+
+# 共通タグ
+common_tags = {
+  Project     = "myproject"
+  Environment = "dev"
+  ManagedBy   = "terraform"
+  Component   = "load-balancer"
+}
+
+# ==================================================
+# ネットワーク設定（必須）
+# ==================================================
+
+# ALBを配置するVPCのID
+vpc_id = "vpc-xxxxxxxxx"
+
+# ALBを配置するサブネットIDのリスト（最低2つのAZ）
+subnet_ids = [
+  "subnet-xxxxxxxxx",  # ap-northeast-1a
+  "subnet-yyyyyyyyy",  # ap-northeast-1c
+]
+
+# ==================================================
+# セキュリティグループ設定
+# ==================================================
+
+# ALBへのアクセスを許可するCIDRブロックのリスト
+# 注意: 現在は使用されていません。80/443ポートは自動的にすべてのIPv4/IPv6を許可します
+allowed_cidr_blocks = ["0.0.0.0/0"]
+
+# ALBに追加で適用するセキュリティグループIDのリスト
+additional_security_group_ids = []
+
+# ==================================================
+# ALB設定
+# ==================================================
+
+# ALB名（空の場合は自動生成）
+alb_name = ""
+
+# 内部向けALBにするかどうか
+internal = false
+
+# 削除保護を有効にするかどうか（本番環境では true を推奨）
+enable_deletion_protection = false
+
+# アイドルタイムアウト（秒）
+idle_timeout = 60
+
+# クロスゾーンロードバランシングを有効にするかどうか
+enable_cross_zone_load_balancing = true
+
+# HTTP/2を有効にするかどうか
+enable_http2 = true
+
+# IPアドレスタイプ（ipv4 または dualstack）
+ip_address_type = "ipv4"
+
+# ==================================================
+# ターゲットグループ設定
+# ==================================================
+
+# ターゲットグループ名（空の場合は自動生成）
+target_group_name = ""
+
+# ターゲットグループのポート番号
+target_group_port = 80
+
+# ターゲットグループのプロトコル
+target_group_protocol = "HTTP"
+
+# ターゲットタイプ（instance, ip, lambda）
+# ECS用では "ip" を使用
+target_type = "ip"
+
+# ==================================================
+# ヘルスチェック設定
+# ==================================================
+
+# ヘルスチェックを有効にするかどうか
+health_check_enabled = true
+
+# ヘルスチェックのパス
+health_check_path = "/"
+
+# ヘルスチェックのポート（trafficの場合はトラフィックポートを使用）
+health_check_port = "traffic"
+
+# ヘルスチェックのプロトコル
+health_check_protocol = "HTTP"
+
+# 正常と判定するまでの連続成功回数
+health_check_healthy_threshold = 2
+
+# 異常と判定するまでの連続失敗回数
+health_check_unhealthy_threshold = 2
+
+# ヘルスチェックのタイムアウト（秒）
+# ECS用により長めのタイムアウト
+health_check_timeout = 10
+
+# ヘルスチェックの間隔（秒）
+# ECS用により短い間隔で早期検出
+health_check_interval = 15
+
+# 正常と判定するHTTPレスポンスコード
+health_check_matcher = "200"
+
+# ==================================================
+# リスナー設定
+# ==================================================
+
+# リスナーのポート番号（現在は使用されていません）
+listener_port = 80
+
+# リスナーのプロトコル（現在は使用されていません）
+listener_protocol = "HTTP"
+
+# SSL証明書のARN（HTTPSリスナーで必須）
+ssl_certificate_arn = "arn:aws:acm:ap-northeast-1:123456789012:certificate/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
+# SSLポリシー（HTTPSの場合）
+ssl_policy = "ELBSecurityPolicy-TLS-1-2-2017-01"
+
+# ==================================================
+# ECS統合設定
+# ==================================================
+
+# ECSサービス接続を有効にするかどうか
+enable_ecs_service_connect = false
+
+# ==================================================
+# アクセスログ設定
+# ==================================================
+
+# アクセスログを有効にするかどうか
+enable_access_logs = false
+
+# アクセスログを保存するS3バケット名
+# access_logs_bucket = "my-alb-access-logs-bucket"
+
+# アクセスログのプレフィックス
+access_logs_prefix = "alb-access-logs"
