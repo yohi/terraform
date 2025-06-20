@@ -1,0 +1,173 @@
+# ==================================================
+# 基本設定
+# ==================================================
+
+# AWSリージョン
+aws_region = "ap-northeast-1"
+
+# プロジェクト名
+project = "my-project"
+
+# 環境名
+env = "dev"
+
+# アプリケーション名
+app = "web"
+
+# 共通タグ
+common_tags = {
+  Project     = "my-project"
+  Environment = "dev"
+  Owner       = "team-name"
+  Terraform   = "true"
+}
+
+# ==================================================
+# ECSクラスター情報
+# ==================================================
+
+# ECSクラスター名
+cluster_name = "my-project-dev-ecs"
+
+# ==================================================
+# VPC・ネットワーク設定
+# ==================================================
+
+# VPC ID（オプション - 指定しない場合はデフォルトVPCを使用）
+# vpc_id = "vpc-12345678"
+
+# サブネットIDのリスト（オプション - 指定しない場合はデフォルトVPCのサブネットを使用）
+# subnet_ids = ["subnet-12345678", "subnet-87654321"]
+
+# 追加のセキュリティグループIDのリスト（オプション）
+# security_group_ids = ["sg-12345678"]
+
+# ==================================================
+# ECSタスク定義設定
+# ==================================================
+
+# タスクCPU（Fargate: 256, 512, 1024, 2048, 4096）
+task_cpu = 256
+
+# タスクメモリ（MiB）
+task_memory = 512
+
+# ==================================================
+# コンテナ設定
+# ==================================================
+
+# コンテナイメージ
+container_image = "nginx:latest"
+
+# コンテナポート
+container_port = 80
+
+# コンテナCPU
+container_cpu = 256
+
+# コンテナメモリ（MiB）
+container_memory = 512
+
+# 環境変数
+environment_variables = {
+  ENV = "development"
+  LOG_LEVEL = "info"
+}
+
+# シークレット（Parameter Store/Secrets Manager）
+# secrets = [
+#   {
+#     name      = "DB_PASSWORD"
+#     valueFrom = "arn:aws:ssm:ap-northeast-1:123456789012:parameter/my-project/dev/db-password"
+#   }
+# ]
+
+# ==================================================
+# ECSサービス設定
+# ==================================================
+
+# 希望するタスク数
+desired_count = 2
+
+# 起動タイプ（FARGATE, EC2）
+launch_type = "FARGATE"
+
+# プラットフォームバージョン（FARGATE使用時）
+platform_version = "LATEST"
+
+# パブリックIPを割り当てるか
+assign_public_ip = true
+
+# Execute Commandを有効にするか
+enable_execute_command = true
+
+# ==================================================
+# ロードバランサー設定
+# ==================================================
+
+# ターゲットグループARN（ALB使用時）
+# target_group_arn = "arn:aws:elasticloadbalancing:ap-northeast-1:123456789012:targetgroup/my-target-group/1234567890123456"
+
+# ロードバランサーに接続するコンテナポート
+load_balancer_container_port = 80
+
+# ==================================================
+# Auto Scaling設定
+# ==================================================
+
+# Auto Scalingを有効にするか
+enable_auto_scaling = true
+
+# 最小キャパシティ
+min_capacity = 1
+
+# 最大キャパシティ
+max_capacity = 10
+
+# ターゲットCPU使用率（%）
+target_cpu_utilization = 70
+
+# ターゲットメモリ使用率（%）
+target_memory_utilization = 80
+
+# スケールイン時のクールダウン時間（秒）
+scale_in_cooldown = 300
+
+# スケールアウト時のクールダウン時間（秒）
+scale_out_cooldown = 300
+
+# ==================================================
+# ログ設定
+# ==================================================
+
+# CloudWatchログを有効にするか
+enable_logging = true
+
+# ログ保持期間（日）
+log_retention_in_days = 7
+
+# ログストリームプレフィックス
+log_stream_prefix = "ecs"
+
+# ==================================================
+# ヘルスチェック設定
+# ==================================================
+
+# ヘルスチェック猶予期間（秒）
+health_check_grace_period_seconds = 60
+
+# ==================================================
+# デプロイメント設定
+# ==================================================
+
+# デプロイメント時の最大パーセント
+deployment_maximum_percent = 200
+
+# デプロイメント時の最小ヘルシーパーセント
+deployment_minimum_healthy_percent = 100
+
+# デプロイメントサーキットブレーカーを有効にするか
+enable_deployment_circuit_breaker = true
+
+# サーキットブレーカー時にロールバックするか
+deployment_circuit_breaker_rollback = true
