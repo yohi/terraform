@@ -30,8 +30,6 @@ variable "common_tags" {
   description = "全リソースに付与する共通タグ"
   type        = map(string)
   default = {
-    Project = var.project
-    Environment = var.env
     ManagedBy = "terraform"
   }
 }
@@ -169,9 +167,9 @@ variable "health_check_path" {
 }
 
 variable "health_check_port" {
-  description = "ヘルスチェックのポート（trafficの場合はトラフィックポートを使用）"
+  description = "ヘルスチェックのポート（traffic-portの場合はトラフィックポートを使用）"
   type        = string
-  default     = "traffic"
+  default     = "traffic-port"
 }
 
 variable "health_check_protocol" {

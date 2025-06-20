@@ -42,7 +42,7 @@ variable "domain_name" {
 
 # ALBモジュールの呼び出し例
 module "alb" {
-  source = "./load_balancer/alb/terraform"
+  source = "./terraform"
 
   # 基本設定
   project = var.project

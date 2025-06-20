@@ -98,8 +98,8 @@ health_check_enabled = true
 # ヘルスチェックのパス
 health_check_path = "/"
 
-# ヘルスチェックのポート（trafficの場合はトラフィックポートを使用）
-health_check_port = "traffic"
+# ヘルスチェックのポート（traffic-portの場合はトラフィックポートを使用）
+health_check_port = "traffic-port"
 
 # ヘルスチェックのプロトコル
 health_check_protocol = "HTTP"
