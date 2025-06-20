@@ -33,7 +33,7 @@ variable "app" {
 variable "ami_name_filter" {
   description = "AMI検索用の名前フィルター"
   type        = list(string)
-  default     = ["amzn2-ami-ecs-hvm-*-x86_64-ebs"]
+  default     = ["amzn2023-ami-ecs-*"]
 }
 
 # ==================================================
@@ -310,8 +310,8 @@ variable "common_tags" {
   description = "全リソースに適用する共通タグ"
   type        = map(string)
   default = {
-    Environment = "dev"
-    Project     = "my-project"
+    Environment = var.env
+    Project     = var.project
     ManagedBy   = "terraform"
   }
 }

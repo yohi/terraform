@@ -30,8 +30,8 @@ variable "common_tags" {
   description = "全リソースに付与する共通タグ"
   type        = map(string)
   default = {
-    Project = "myproject"
-    Environment = "dev"
+    Project = var.project
+    Environment = var.env
     ManagedBy = "terraform"
   }
 }

@@ -149,9 +149,12 @@ enable_ecs_service_connect = false
 # ==================================================
 
 # アクセスログを有効にするかどうか
+# 注意: enable_access_logs を true に設定する場合、access_logs_bucket の設定が必須です
 enable_access_logs = false
 
 # アクセスログを保存するS3バケット名
+# 注意: enable_access_logs が true の場合は必須の設定です
+# 例: "myproject-alb-access-logs-ap-northeast-1"
 # access_logs_bucket = "my-alb-access-logs-bucket"
 
 # アクセスログのプレフィックス
