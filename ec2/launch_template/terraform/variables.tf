@@ -122,7 +122,11 @@ variable "cloudwatch_run_as_user" {
 
 variable "cloudwatch_cpu_metrics" {
   description = "CloudWatch CPU メトリクス設定"
-  type        = map(any)
+  type = object({
+    measurement                 = list(string)
+    metrics_collection_interval = number
+    totalcpu                   = bool
+  })
   default = {
     measurement = ["cpu_usage_idle", "cpu_usage_iowait", "cpu_usage_user", "cpu_usage_system"]
     metrics_collection_interval = 60
