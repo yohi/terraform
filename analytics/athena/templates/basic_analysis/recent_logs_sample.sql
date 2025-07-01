@@ -5,10 +5,12 @@ SELECT
     container_name,
     ec2_instance_id
 FROM ${database_name}."${table_name}"
-WHERE partition_0 = '2025' AND partition_1 = '01' AND partition_2 = '17'
+WHERE partition_0 = cast(year(current_timestamp) as varchar)
+    AND partition_1 = lpad(cast(month(current_timestamp) as varchar), 2, '0')
+    AND partition_2 = lpad(cast(day(current_timestamp) as varchar), 2, '0')
     AND partition_4 = '${partition_4_value}'
-    AND month = '01'
-    AND day = '15'
-    AND hour = '23'
+    AND month = lpad(cast(month(current_timestamp) as varchar), 2, '0')
+    AND day = lpad(cast(day(current_timestamp) as varchar), 2, '0')
+    AND hour >= lpad(cast(hour(current_timestamp - interval '1' hour) as varchar), 2, '0')
 ORDER BY date DESC
 LIMIT 100

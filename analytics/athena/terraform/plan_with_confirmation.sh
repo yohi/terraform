@@ -16,6 +16,12 @@ if ! command -v aws &> /dev/null; then
     exit 1
 fi
 
+# Check if jq is installed
+if ! command -v jq &> /dev/null; then
+    echo "❌ jq is not installed or not in PATH"
+    exit 1
+fi
+
 # Get current AWS identity
 echo "Getting current AWS identity..."
 aws_identity=$(aws sts get-caller-identity 2>/dev/null)

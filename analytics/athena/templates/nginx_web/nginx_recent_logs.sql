@@ -1,5 +1,5 @@
 SELECT
-    date,
+    "date",
     container_id,
     container_name,
     source,
@@ -23,5 +23,5 @@ WHERE
     AND partition_1 = lpad(cast(month(now()) as varchar), 2, '0')
     AND partition_2 = lpad(cast(day(now()) as varchar), 2, '0')
     AND partition_4 = '${partition_4_value}'
-ORDER BY date DESC
+ORDER BY "date" DESC
 LIMIT 50

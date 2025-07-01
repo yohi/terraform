@@ -171,7 +171,7 @@ validate_input() {
             fi
             ;;
         "logs_s3_prefix")
-            if [[ $var_value =~ /$ ]]; then
+            if [[ $var_value != "${var_value%/}" ]]; then
                 echo "   ❌ S3 prefix should not end with '/'"
                 return 1
             fi
@@ -240,7 +240,7 @@ run_terraform_apply() {
     # Add variables if not using a plan file
     local has_plan_file=false
     for arg in "${additional_args[@]}"; do
-        if [[ $arg =~ \.out$ ]] || [[ $arg =~ ^[^-] ]]; then
+        if [[ -f "$arg" ]]; then
             has_plan_file=true
             break
         fi
@@ -325,7 +325,7 @@ main() {
     # Only collect variables if not using a plan file
     local has_plan_file=false
     for arg in "${terraform_args[@]}"; do
-        if [[ $arg =~ \.out$ ]] || [[ $arg =~ ^[^-] ]]; then
+        if [[ -f "$arg" ]]; then
             has_plan_file=true
             break
         fi

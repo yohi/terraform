@@ -1,12 +1,10 @@
 SELECT
-    partition_0 as year, partition_1 as month, partition_2 as day, partition_3 as partition_3 as hour,
+    partition_0 as year, partition_1 as month, partition_2 as day, partition_3 as hour,
     COUNT(*) as log_count,
     COUNT(DISTINCT container_id) as unique_containers,
     COUNT(DISTINCT ec2_instance_id) as unique_instances
 FROM ${database_name}."${table_name}"
 WHERE partition_0 = '2025' AND partition_1 = '01' AND partition_2 = '17'
     AND partition_4 = '${partition_4_value}'
-    AND month = '01'
-    AND day = '15'
 GROUP BY partition_0, partition_1, partition_2, partition_3, partition_4
 ORDER BY partition_0, partition_1, partition_2, partition_3, partition_4

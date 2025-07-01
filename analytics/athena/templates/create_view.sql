@@ -43,14 +43,10 @@ CASE
 END AS log_level,
 
 CASE
-    WHEN log LIKE '%ERROR%'
-    OR log LIKE '%error%' THEN 'error'
-    WHEN log LIKE '%WARN%'
-    OR log LIKE '%warn%' THEN 'warning'
-    WHEN log LIKE '%INFO%'
-    OR log LIKE '%info%' THEN 'info'
-    WHEN log LIKE '%DEBUG%'
-    OR log LIKE '%debug%' THEN 'debug'
+    WHEN lower(log) LIKE '%error%' THEN 'error'
+    WHEN lower(log) LIKE '%warn%' THEN 'warning'
+    WHEN lower(log) LIKE '%info%' THEN 'info'
+    WHEN lower(log) LIKE '%debug%' THEN 'debug'
     ELSE 'other'
 END AS detected_log_level,
 

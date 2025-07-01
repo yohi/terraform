@@ -227,7 +227,7 @@ output "execution_guide" {
   value = {
     step_1_glue_database       = "✅ AWS Glue Database '${aws_glue_catalog_database.main.name}' has been created"
     step_2_s3_setup            = "✅ S3 bucket '${local.logs_bucket}' is configured for data storage"
-    step_3_crawler_setup       = "⚠️  Run Glue Crawlers manually or via automation: ${join(", ", [for name in values(aws_glue_crawler.log_crawlers)[*].name : name])}"
+    step_3_crawler_setup       = "⚠️  Run Glue Crawlers manually or via automation: ${join(", ", [for crawler in values(aws_glue_crawler.log_crawlers) : crawler.name])}"
     step_4a_table_verification = "⚠️  After running crawlers, verify tables in Athena using named queries"
     step_4b_view_creation      = "⚠️  Create views using the provided named queries for better data analysis"
     step_5_quicksight          = var.enable_quicksight ? "✅ QuickSight IAM role created - configure QuickSight permissions manually" : "❌ QuickSight integration disabled - set enable_quicksight=true to enable"

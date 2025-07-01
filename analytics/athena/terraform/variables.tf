@@ -319,3 +319,30 @@ variable "crawler_max_concurrent_runs" {
 }
 
 # Local values are defined in main.tf to avoid duplication
+
+# ==================================================
+# Validation Variables
+# ==================================================
+# These variables are used for native Terraform validation instead of external bash scripts
+
+variable "expected_aws_account_id" {
+  description = "Expected AWS account ID for validation. If empty, account validation is skipped. This replaces the bash script validation for CI/CD environments."
+  type        = string
+  default     = ""
+  validation {
+    condition     = var.expected_aws_account_id == "" || can(regex("^[0-9]{12}$", var.expected_aws_account_id))
+    error_message = "expected_aws_account_id must be empty or a valid 12-digit AWS account ID."
+  }
+}
+
+variable "require_bucket_exists" {
+  description = "Whether to require that the S3 bucket already exists (true) or allow Terraform to create it (false). Set to true in CI/CD environments to enforce pre-existing buckets."
+  type        = bool
+  default     = false
+}
+
+variable "skip_bucket_validation" {
+  description = "Skip S3 bucket existence validation entirely. Useful for CI/CD environments where bucket validation should be handled externally."
+  type        = bool
+  default     = false
+}

@@ -14,37 +14,57 @@ AWS Athena分析環境を自動構築するTerraform構成です。S3データ�
 
 ## 🔒 セキュリティ機能
 
-### AWS Account確認機能
-誤ったAWSアカウントでの実行を防ぐため、以下のスクリプトを使用してください：
+### AWS Account検証機能（Terraformネイティブ）
+誤ったAWSアカウントでの実行を防ぐため、Terraformネイティブの検証を使用：
 
+```hcl
+# 特定のAWSアカウントIDでの実行を強制
+expected_aws_account_id = "123456789012"
+```
+
+**CI/CD環境での使用例**:
 ```bash
-# Terraform Plan (AWS確認付き)
-./plan_with_confirmation.sh
-
-# Terraform Apply (AWS確認付き)
-./apply_with_confirmation.sh
+# 環境変数を使用
+export TF_VAR_expected_aws_account_id="123456789012"
+terraform plan
+terraform apply
 ```
 
 **動作**:
-1. AWS Account情報（Account ID、User ID、ARN）を表示
-2. 明示的な確認（Y/N）を要求
-3. 確認後にTerraformコマンドを実行
+1. 現在のAWSアカウントIDを取得
+2. `expected_aws_account_id`が設定されている場合、値を照合
+3. 不一致の場合はTerraformがエラーで停止
+4. 空文字列の場合はアカウント検証をスキップ
 
-### S3バケット自動処理
-既存バケットの検出と新規作成を自動化：
+### S3バケット検証機能（Terraformネイティブ）
+S3バケットの存在確認と作成ポリシーを制御：
 
 ```hcl
-# インタラクティブモード（デフォルト）
-auto_create_bucket = false
+# 基本設定
+auto_create_bucket = false           # バケット自動作成を無効化
+require_bucket_exists = false        # 既存バケットを要求しない
+skip_bucket_validation = false       # バケット検証を実行
 
-# 自動作成モード（CI/CD向け）
-auto_create_bucket = true
+# CI/CD環境向け設定例
+require_bucket_exists = true         # 既存バケットを要求
+skip_bucket_validation = false       # バケット検証を実行
 ```
 
-**動作パターン**:
-- 既存バケット → 再利用
-- 新規バケット（手動モード） → 確認後作成
-- 新規バケット（自動モード） → 確認なしで作成
+**検証パターン**:
+- `require_bucket_exists = true` → バケットが存在しない場合はエラー
+- `require_bucket_exists = false` + `auto_create_bucket = true` → バケットを自動作成
+- `skip_bucket_validation = true` → バケット検証をスキップ（外部でバケット管理する場合）
+
+### 従来のbashスクリプト（非推奨）
+⚠️ **非推奨**: 以下のbashスクリプトはSaaS/CI環境では動作しない可能性があります：
+
+```bash
+# 従来の方法（CI/CD環境では使用しないでください）
+./plan_with_confirmation.sh
+./apply_with_confirmation.sh
+```
+
+**推奨**: 上記のTerraformネイティブ検証を使用してください。
 
 ## 🏗️ アーキテクチャ
 
@@ -132,6 +152,11 @@ logs_s3_prefix   = "data/logs"                 # バケット内のデータパ�
 # バケット自動作成
 auto_create_bucket = true              # 存在しない場合の自動作成
 
+# 検証設定（CI/CD環境向け）
+expected_aws_account_id = "123456789012"  # AWSアカウントID検証
+require_bucket_exists = false          # 既存バケットを要求
+skip_bucket_validation = false         # バケット検証をスキップ
+
 # QuickSight連携
 enable_quicksight = true               # QuickSight用IAMロール作成
 
@@ -180,11 +205,56 @@ log_types = {
 # 初期化
 terraform init
 
-# AWS確認付きプラン
-./plan_with_confirmation.sh
+# 計画の実行
+terraform plan
 
-# AWS確認付き適用
-./apply_with_confirmation.sh
+# 適用の実行
+terraform apply
+```
+
+### 5. CI/CD環境での使用
+
+#### GitHub Actions / GitLab CI例
+
+```yaml
+env:
+  TF_VAR_expected_aws_account_id: "123456789012"
+  TF_VAR_require_bucket_exists: "true"
+  TF_VAR_skip_bucket_validation: "false"
+
+steps:
+  - name: Terraform Plan
+    run: terraform plan
+
+  - name: Terraform Apply
+    run: terraform apply -auto-approve
+```
+
+#### Jenkins例
+
+```groovy
+environment {
+    TF_VAR_expected_aws_account_id = "123456789012"
+    TF_VAR_require_bucket_exists = "true"
+}
+
+stage('Deploy') {
+    steps {
+        sh 'terraform init'
+        sh 'terraform plan'
+        sh 'terraform apply -auto-approve'
+    }
+}
+```
+
+#### 推奨CI/CD設定
+
+```hcl
+# terraform.tfvars (CI/CD環境用)
+expected_aws_account_id = "123456789012"    # 対象アカウントID
+require_bucket_exists = true               # バケットの事前作成を要求
+skip_bucket_validation = false             # バケット検証を実行
+auto_create_bucket = false                 # 自動作成を無効化
 ```
 
 ## 📁 データ構造

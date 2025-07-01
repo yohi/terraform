@@ -7,25 +7,44 @@ data "aws_caller_identity" "current" {}
 # AWS Region data
 data "aws_region" "current" {}
 
-# AWS Account validation with Y/N confirmation (runs during plan and apply)
-data "external" "aws_account_validation" {
-  program = ["bash", "${path.module}/aws_account_check.sh"]
+# ==================================================
+# Terraform-native validation (replaces bash scripts)
+# ==================================================
+
+# AWS Account validation using native Terraform
+locals {
+  # Account validation check
+  current_account_id         = data.aws_caller_identity.current.account_id
+  account_validation_enabled = var.expected_aws_account_id != ""
+
+  # Account validation with custom error message
+  account_validation_check = var.expected_aws_account_id == "" ? true : (
+    local.current_account_id == var.expected_aws_account_id
+  )
+
+  # Custom validation error message
+  _ = local.account_validation_enabled && !local.account_validation_check ? tobool("AWS Account validation failed. Expected: ${var.expected_aws_account_id}, Current: ${local.current_account_id}. Please verify you are using the correct AWS account.") : true
 }
 
-# S3バケット存在確認（ログ用バケット - Athena結果も同じバケットを使用）
-data "external" "logs_bucket_check" {
-  program = ["bash", "${path.module}/s3_bucket_check.sh", var.logs_bucket_name, tostring(var.auto_create_bucket), var.logs_s3_prefix]
+# S3 bucket existence check using native Terraform
+data "aws_s3_bucket" "logs_bucket_check" {
+  count  = var.skip_bucket_validation ? 0 : 1
+  bucket = var.logs_bucket_name
+
+  # This will fail if bucket doesn't exist, which is intentional for validation
 }
+
+# S3 bucket logic consolidated into main locals block below
 
 # 既存のログバケットを参照（存在する場合）
 data "aws_s3_bucket" "existing_logs" {
-  count  = jsondecode(data.external.logs_bucket_check.result.bucket_exists) ? 1 : 0
+  count  = local.bucket_exists ? 1 : 0
   bucket = var.logs_bucket_name
 }
 
 # S3バケットの作成（存在しない場合、auto_create_bucketがtrueの場合）
 resource "aws_s3_bucket" "logs_bucket" {
-  count  = !jsondecode(data.external.logs_bucket_check.result.bucket_exists) && var.auto_create_bucket ? 1 : 0
+  count  = local.should_create_bucket ? 1 : 0
   bucket = var.logs_bucket_name
 
   tags = merge(local.common_tags, {
@@ -35,9 +54,97 @@ resource "aws_s3_bucket" "logs_bucket" {
   })
 }
 
+# S3バケットのライフサイクル設定
+resource "aws_s3_bucket_lifecycle_configuration" "logs_bucket_lifecycle" {
+  count  = local.should_create_bucket ? 1 : 0
+  bucket = aws_s3_bucket.logs_bucket[0].id
+
+  rule {
+    id     = "athena_query_results"
+    status = "Enabled"
+
+    filter {
+      prefix = "athena-results/"
+    }
+
+    transition {
+      days          = 30
+      storage_class = "STANDARD_IA"
+    }
+
+    transition {
+      days          = 90
+      storage_class = "GLACIER"
+    }
+
+    expiration {
+      days = 365
+    }
+
+    noncurrent_version_expiration {
+      noncurrent_days = 30
+    }
+  }
+
+  rule {
+    id     = "log_data_lifecycle"
+    status = "Enabled"
+
+    filter {
+      prefix = "logs/"
+    }
+
+    transition {
+      days          = 30
+      storage_class = "STANDARD_IA"
+    }
+
+    transition {
+      days          = 90
+      storage_class = "GLACIER"
+    }
+
+    transition {
+      days          = 180
+      storage_class = "DEEP_ARCHIVE"
+    }
+
+    expiration {
+      days = 2555 # 7 years for compliance
+    }
+
+    noncurrent_version_expiration {
+      noncurrent_days = 90
+    }
+  }
+
+  rule {
+    id     = "default_lifecycle"
+    status = "Enabled"
+
+    transition {
+      days          = 60
+      storage_class = "STANDARD_IA"
+    }
+
+    transition {
+      days          = 180
+      storage_class = "GLACIER"
+    }
+
+    expiration {
+      days = 730 # 2 years default retention
+    }
+
+    noncurrent_version_expiration {
+      noncurrent_days = 60
+    }
+  }
+}
+
 # S3バケットの暗号化設定
 resource "aws_s3_bucket_server_side_encryption_configuration" "logs_bucket_encryption" {
-  count  = !jsondecode(data.external.logs_bucket_check.result.bucket_exists) && var.auto_create_bucket ? 1 : 0
+  count  = local.should_create_bucket ? 1 : 0
   bucket = aws_s3_bucket.logs_bucket[0].id
 
   rule {
@@ -49,7 +156,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "logs_bucket_encry
 
 # S3バケットのバージョニング設定
 resource "aws_s3_bucket_versioning" "logs_bucket_versioning" {
-  count  = !jsondecode(data.external.logs_bucket_check.result.bucket_exists) && var.auto_create_bucket ? 1 : 0
+  count  = local.should_create_bucket ? 1 : 0
   bucket = aws_s3_bucket.logs_bucket[0].id
 
   versioning_configuration {
@@ -59,7 +166,7 @@ resource "aws_s3_bucket_versioning" "logs_bucket_versioning" {
 
 # S3バケットのパブリックアクセスブロック設定
 resource "aws_s3_bucket_public_access_block" "logs_bucket_pab" {
-  count  = !jsondecode(data.external.logs_bucket_check.result.bucket_exists) && var.auto_create_bucket ? 1 : 0
+  count  = local.should_create_bucket ? 1 : 0
   bucket = aws_s3_bucket.logs_bucket[0].id
 
   block_public_acls       = true
@@ -75,8 +182,24 @@ locals {
   # 例: rcs_prd_web_logs のように環境と案件が明確になる命名規則
   default_database_name = "${var.project}_${var.env}_${var.app}_logs"
   athena_database_name  = var.athena_database_name != "" ? var.athena_database_name : local.default_database_name
+
+  # ==================================================
+  # S3 bucket validation logic (replaces external bash scripts)
+  # ==================================================
+  # Determine if bucket exists (using try to handle case where data source is not created)
+  bucket_exists = !var.skip_bucket_validation && length(data.aws_s3_bucket.logs_bucket_check) > 0
+
+  # Determine if we should create a new bucket
+  should_create_bucket = !local.bucket_exists && var.auto_create_bucket && !var.skip_bucket_validation
+
+  # Validation: If require_bucket_exists is true, bucket must exist
+  bucket_requirement_check = var.require_bucket_exists ? local.bucket_exists : true
+
+  # Validation error if bucket is required but doesn't exist
+  _bucket_validation = var.require_bucket_exists && !local.bucket_exists && !var.skip_bucket_validation ? tobool("S3 bucket '${var.logs_bucket_name}' is required but does not exist. Please create it first or set require_bucket_exists=false.") : true
+
   # ログ用バケットとAthena結果用バケットを同じにする
-  logs_bucket = jsondecode(data.external.logs_bucket_check.result.bucket_exists) ? data.aws_s3_bucket.existing_logs[0].bucket : var.logs_bucket_name
+  logs_bucket = local.bucket_exists ? data.aws_s3_bucket.existing_logs[0].bucket : var.logs_bucket_name
   # 実際に使用するAthenaデータベース名（既存または新規作成）
   actual_athena_database_name = local.athena_database_name
 
