@@ -12,6 +12,40 @@ AWS Athena分析環境を自動構築するTerraform構成です。S3データ�
 4. **IAM** - 各サービス間の権限管理
 5. **QuickSight連携** - データ可視化用の権限設定（オプション）
 
+## 🔒 セキュリティ機能
+
+### AWS Account確認機能
+誤ったAWSアカウントでの実行を防ぐため、以下のスクリプトを使用してください：
+
+```bash
+# Terraform Plan (AWS確認付き)
+./plan_with_confirmation.sh
+
+# Terraform Apply (AWS確認付き)
+./apply_with_confirmation.sh
+```
+
+**動作**:
+1. AWS Account情報（Account ID、User ID、ARN）を表示
+2. 明示的な確認（Y/N）を要求
+3. 確認後にTerraformコマンドを実行
+
+### S3バケット自動処理
+既存バケットの検出と新規作成を自動化：
+
+```hcl
+# インタラクティブモード（デフォルト）
+auto_create_bucket = false
+
+# 自動作成モード（CI/CD向け）
+auto_create_bucket = true
+```
+
+**動作パターン**:
+- 既存バケット → 再利用
+- 新規バケット（手動モード） → 確認後作成
+- 新規バケット（自動モード） → 確認なしで作成
+
 ## 🏗️ アーキテクチャ
 
 ```
@@ -146,11 +180,11 @@ log_types = {
 # 初期化
 terraform init
 
-# プラン確認
-terraform plan
+# AWS確認付きプラン
+./plan_with_confirmation.sh
 
-# 適用
-terraform apply
+# AWS確認付き適用
+./apply_with_confirmation.sh
 ```
 
 ## 📁 データ構造
