@@ -473,11 +473,6 @@ resource "aws_iam_role" "athena_role" {
         Principal = {
           Service = "athena.amazonaws.com"
         }
-        Condition = {
-          StringEquals = {
-            "aws:RequestedRegion" = data.aws_region.current.name
-          }
-        }
       }
     ]
   })

@@ -50,10 +50,10 @@ SHOW PARTITIONS ${database_name}."${table_name}" LIMIT 10;
 -- Add partition for current date
 ALTER TABLE ${database_name}."${table_name}"
 ADD PARTITION (
-    partition_0='${year}',
-    partition_1='${month}',
-    partition_2='${day}',
-    partition_3='${hour}',
-    partition_4='${partition_4_value}'
+    year='${year}',
+    month='${month}',
+    day='${day}',
+    hour='${hour}',
+    partition_4_value='${partition_4_value}'
 )
 LOCATION 's3://${bucket_name}/${s3_prefix}/year=${year}/month=${month}/day=${day}/hour=${hour}/';
