@@ -84,6 +84,10 @@ resource "aws_s3_bucket_lifecycle_configuration" "logs_bucket_lifecycle" {
     noncurrent_version_expiration {
       noncurrent_days = 30
     }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
   }
 
   rule {
@@ -116,6 +120,10 @@ resource "aws_s3_bucket_lifecycle_configuration" "logs_bucket_lifecycle" {
     noncurrent_version_expiration {
       noncurrent_days = 90
     }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
   }
 
   rule {
@@ -138,6 +146,10 @@ resource "aws_s3_bucket_lifecycle_configuration" "logs_bucket_lifecycle" {
 
     noncurrent_version_expiration {
       noncurrent_days = 60
+    }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
     }
   }
 }

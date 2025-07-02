@@ -32,8 +32,8 @@ check_bucket_exists() {
 # S3プレフィックスの存在確認
 check_prefix_exists() {
     if [ -n "$PREFIX" ]; then
-        local objects=$(aws s3 ls "s3://$BUCKET_NAME/$PREFIX" 2>/dev/null | wc -l)
-        [ "$objects" -gt 0 ]
+        # コマンドの終了ステータスを保持するため、直接実行して結果を確認
+        aws s3 ls "s3://$BUCKET_NAME/$PREFIX" >/dev/null 2>&1
         return $?
     else
         return 0  # プレフィックスが指定されていない場合はチェックしない
