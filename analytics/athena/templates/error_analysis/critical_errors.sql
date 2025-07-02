@@ -15,9 +15,10 @@ SELECT
     partition_4
 FROM ${database_name}."${table_name}"
 WHERE
-    partition_0 = '2025'
-    AND partition_1 = '01'
-    AND partition_2 = '17'
+    partition_0 = cast(year(now()) as varchar)
+    AND partition_1 = lpad(cast(month(now()) as varchar), 2, '0')
+    AND partition_2 = lpad(cast(day(now()) as varchar), 2, '0')
+    AND partition_4 = '${partition_4_value}'
     AND (
         LOWER(log) LIKE '%critical%'
         OR LOWER(log) LIKE '%fatal%'

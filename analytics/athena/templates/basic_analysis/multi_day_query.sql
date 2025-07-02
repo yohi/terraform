@@ -15,8 +15,8 @@ SELECT
     partition_4
 FROM ${database_name}."${table_name}"
 WHERE
-    partition_0 = '2025'
-    AND partition_1 = '01'
-    AND partition_2 IN ('15', '16', '17')
+    partition_0 = '${year}'
+    AND partition_1 = '${month}'
+    AND partition_2 IN ('${day1}', '${day2}', '${day3}')
 ORDER BY date DESC
 LIMIT 100

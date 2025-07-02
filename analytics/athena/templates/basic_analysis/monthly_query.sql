@@ -15,7 +15,7 @@ SELECT
     partition_4
 FROM ${database_name}."${table_name}"
 WHERE
-    partition_0 = '2025'
-    AND partition_1 = '01'
+    partition_0 = '${year}'
+    AND partition_1 = '${month}'
 ORDER BY date DESC
 LIMIT 1000

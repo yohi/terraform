@@ -4,7 +4,7 @@ SELECT
     COUNT(DISTINCT container_id) as active_containers,
     COUNT(DISTINCT ec2_instance_id) as active_instances
 FROM ${database_name}."${table_name}"
-WHERE partition_0 = '2025' AND partition_1 = '01' AND partition_2 = '17'
+WHERE partition_0 = '${year}' AND partition_1 = '${month}' AND partition_2 = '${day}'
     AND partition_4 = '${partition_4_value}'
     AND log LIKE '%HTTP/1.1%'
 GROUP BY partition_3

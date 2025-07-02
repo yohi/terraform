@@ -89,4 +89,4 @@ LIMIT 1;
 -- SHOW PARTITIONS ${database_name}."${project_env}-error" LIMIT 10;
 
 -- If you need to repair specific partitions, you can also use:
--- ALTER TABLE ${database_name}."${project_env}-django_web" ADD PARTITION (partition_0='2024', partition_1='01', partition_2='01', partition_3='00', partition_4='');
+-- ALTER TABLE ${database_name}."${project_env}-django_web" ADD PARTITION (partition_0='${year}', partition_1='${month}', partition_2='${day}', partition_3='${hour}', partition_4='');
