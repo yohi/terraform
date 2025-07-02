@@ -27,8 +27,9 @@ locals {
 }
 
 # S3 bucket existence check using native Terraform
+# 自動作成時のみ検証をスキップ - auto_create_bucket=trueの場合は検証不要
 data "aws_s3_bucket" "logs_bucket_check" {
-  count  = var.skip_bucket_validation ? 0 : 1
+  count  = (var.skip_bucket_validation || var.auto_create_bucket) ? 0 : 1
   bucket = var.logs_bucket_name
 
   # This will fail if bucket doesn't exist, which is intentional for validation
@@ -207,9 +208,12 @@ locals {
   # S3 bucket validation logic (replaces external bash scripts)
   # ==================================================
   # Determine if bucket exists (using try to handle case where data source is not created)
-  bucket_exists = !var.skip_bucket_validation && length(data.aws_s3_bucket.logs_bucket_check) > 0
+  # auto_create_bucket=trueの場合は検証をスキップするため、bucket_existsの判定も調整
+  bucket_exists = !(var.skip_bucket_validation || var.auto_create_bucket) && try(length(data.aws_s3_bucket.logs_bucket_check) > 0, false)
 
   # Determine if we should create a new bucket
+  # auto_create_bucket=true かつ skip_bucket_validation=false の場合のみ作成
+  # skip_bucket_validation=true の場合は外部管理を想定
   should_create_bucket = !local.bucket_exists && var.auto_create_bucket && !var.skip_bucket_validation
 
   # Validation: If require_bucket_exists is true, bucket must exist
