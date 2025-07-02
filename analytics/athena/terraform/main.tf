@@ -530,22 +530,9 @@ resource "aws_iam_role_policy" "athena_s3_policy" {
         Sid    = "GlueDataCatalogAccess"
         Effect = "Allow"
         Action = [
-          "glue:CreateDatabase",
-          "glue:DeleteDatabase",
           "glue:GetDatabase",
-          "glue:GetDatabases",
-          "glue:UpdateDatabase",
-          "glue:CreateTable",
-          "glue:DeleteTable",
-          "glue:BatchDeleteTable",
-          "glue:UpdateTable",
           "glue:GetTable",
           "glue:GetTables",
-          "glue:BatchCreatePartition",
-          "glue:CreatePartition",
-          "glue:DeletePartition",
-          "glue:BatchDeletePartition",
-          "glue:UpdatePartition",
           "glue:GetPartition",
           "glue:GetPartitions",
           "glue:BatchGetPartition"
@@ -555,6 +542,27 @@ resource "aws_iam_role_policy" "athena_s3_policy" {
           "arn:aws:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:database/${local.athena_database_name}",
           "arn:aws:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:table/${local.athena_database_name}/*"
         ]
+      },
+      {
+        Sid    = "DenyOtherEnvironmentAccess"
+        Effect = "Deny"
+        Action = [
+          "glue:GetDatabase",
+          "glue:GetTable",
+          "glue:GetTables",
+          "glue:GetPartition",
+          "glue:GetPartitions",
+          "glue:BatchGetPartition"
+        ]
+        Resource = [
+          "arn:aws:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:database/*",
+          "arn:aws:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:table/*/*"
+        ]
+        Condition = {
+          "ForAllValues:StringNotLike" = {
+            "glue:DatabaseName" = local.athena_database_name
+          }
+        }
       }
     ]
   })
@@ -768,4 +776,204 @@ resource "aws_athena_named_query" "current_day_all_data" {
   })
 
   description = "全ログテーブルから当日の全データを取得するクエリ"
+}
+
+# ==================================================
+# ワークグループユーザー用IAMロール・ポリシー（環境分離強化）
+# ==================================================
+
+# ワークグループユーザー用IAMロール
+resource "aws_iam_role" "athena_workgroup_user_role" {
+  name = "${local.project_env}-athena-workgroup-user-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
+        }
+        Condition = {
+          StringEquals = {
+            "aws:RequestedRegion" = data.aws_region.current.name
+          }
+        }
+      }
+    ]
+  })
+
+  tags = local.common_tags
+}
+
+# ワークグループユーザー用IAMポリシー（環境分離）
+resource "aws_iam_role_policy" "athena_workgroup_user_policy" {
+  name = "${local.project_env}-athena-workgroup-user-policy"
+  role = aws_iam_role.athena_workgroup_user_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AthenaWorkgroupAccess"
+        Effect = "Allow"
+        Action = [
+          "athena:BatchGetQueryExecution",
+          "athena:GetQueryExecution",
+          "athena:GetQueryResults",
+          "athena:GetWorkGroup",
+          "athena:ListQueryExecutions",
+          "athena:StartQueryExecution",
+          "athena:StopQueryExecution",
+          "athena:ListWorkGroups"
+        ]
+        Resource = [
+          aws_athena_workgroup.main.arn
+        ]
+      },
+      {
+        Sid    = "DenyOtherWorkgroups"
+        Effect = "Deny"
+        Action = [
+          "athena:*"
+        ]
+        Resource = [
+          "arn:aws:athena:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:workgroup/*"
+        ]
+        Condition = {
+          "ForAllValues:StringNotEquals" = {
+            "athena:WorkgroupName" = aws_athena_workgroup.main.name
+          }
+        }
+      },
+      {
+        Sid    = "GlueDataCatalogLimitedAccess"
+        Effect = "Allow"
+        Action = [
+          "glue:GetDatabase",
+          "glue:GetTable",
+          "glue:GetTables",
+          "glue:GetPartition",
+          "glue:GetPartitions",
+          "glue:BatchGetPartition"
+        ]
+        Resource = [
+          "arn:aws:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:catalog",
+          "arn:aws:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:database/${local.athena_database_name}",
+          "arn:aws:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:table/${local.athena_database_name}/*"
+        ]
+      },
+      {
+        Sid    = "DenyOtherDatabases"
+        Effect = "Deny"
+        Action = [
+          "glue:GetDatabase",
+          "glue:GetDatabases",
+          "glue:GetTable",
+          "glue:GetTables",
+          "glue:GetPartition",
+          "glue:GetPartitions",
+          "glue:BatchGetPartition"
+        ]
+        Resource = "*"
+        Condition = {
+          "ForAllValues:StringNotEquals" = {
+            "glue:DatabaseName" = local.athena_database_name
+          }
+        }
+      },
+      {
+        Sid    = "S3QueryResultsAccess"
+        Effect = "Allow"
+        Action = [
+          "s3:GetBucketLocation",
+          "s3:GetObject",
+          "s3:ListBucket",
+          "s3:PutObject",
+          "s3:DeleteObject"
+        ]
+        Resource = [
+          "arn:aws:s3:::${local.logs_bucket}/athena-query-results/*",
+          "arn:aws:s3:::${local.logs_bucket}"
+        ]
+      },
+      {
+        Sid    = "S3LogDataReadAccess"
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:ListBucket"
+        ]
+        Resource = [
+          "arn:aws:s3:::${local.logs_bucket}/${var.logs_s3_prefix}/*",
+          "arn:aws:s3:::${local.logs_bucket}"
+        ]
+      }
+    ]
+  })
+}
+
+# 管理者用IAMポリシー（データベース作成・更新権限付き）
+resource "aws_iam_policy" "athena_admin_policy" {
+  name        = "${local.project_env}-athena-admin-policy"
+  description = "Administrative access to ${local.project_env} Athena resources"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AthenaFullAccess"
+        Effect = "Allow"
+        Action = [
+          "athena:*"
+        ]
+        Resource = [
+          aws_athena_workgroup.main.arn
+        ]
+      },
+      {
+        Sid    = "GlueDataCatalogFullAccess"
+        Effect = "Allow"
+        Action = [
+          "glue:CreateDatabase",
+          "glue:DeleteDatabase",
+          "glue:GetDatabase",
+          "glue:UpdateDatabase",
+          "glue:CreateTable",
+          "glue:DeleteTable",
+          "glue:BatchDeleteTable",
+          "glue:UpdateTable",
+          "glue:GetTable",
+          "glue:GetTables",
+          "glue:BatchCreatePartition",
+          "glue:CreatePartition",
+          "glue:DeletePartition",
+          "glue:BatchDeletePartition",
+          "glue:UpdatePartition",
+          "glue:GetPartition",
+          "glue:GetPartitions",
+          "glue:BatchGetPartition"
+        ]
+        Resource = [
+          "arn:aws:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:catalog",
+          "arn:aws:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:database/${local.athena_database_name}",
+          "arn:aws:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:table/${local.athena_database_name}/*"
+        ]
+      },
+      {
+        Sid    = "S3FullAccess"
+        Effect = "Allow"
+        Action = [
+          "s3:*"
+        ]
+        Resource = [
+          "arn:aws:s3:::${local.logs_bucket}",
+          "arn:aws:s3:::${local.logs_bucket}/*"
+        ]
+      }
+    ]
+  })
+
+  tags = local.common_tags
 }

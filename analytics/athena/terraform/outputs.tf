@@ -249,14 +249,62 @@ output "connection_info" {
 
 # セキュリティ情報
 output "security_info" {
-  description = "Security configuration summary"
+  description = "Security and access control information"
   value = {
-    s3_encryption     = "AES256 (SSE-S3)"
-    athena_encryption = "SSE_S3"
-    iam_roles = {
-      athena_role       = aws_iam_role.athena_role.arn
-      glue_crawler_role = aws_iam_role.glue_crawler_role.arn
-      quicksight_role   = var.enable_quicksight ? aws_iam_role.quicksight_role[0].arn : "Not enabled"
+    athena_role_arn            = aws_iam_role.athena_role.arn
+    glue_crawler_role_arn      = aws_iam_role.glue_crawler_role.arn
+    quicksight_role_arn        = var.enable_quicksight ? aws_iam_role.quicksight_role[0].arn : null
+    data_classification        = var.data_classification
+    workgroup_enforce_settings = true
+  }
+}
+
+# ==================================================
+# 環境分離強化のためのIAMリソース出力
+# ==================================================
+
+output "workgroup_user_role_arn" {
+  description = "IAM role ARN for workgroup users (environment-isolated access)"
+  value       = aws_iam_role.athena_workgroup_user_role.arn
+}
+
+output "workgroup_user_role_name" {
+  description = "IAM role name for workgroup users"
+  value       = aws_iam_role.athena_workgroup_user_role.name
+}
+
+output "athena_admin_policy_arn" {
+  description = "IAM policy ARN for Athena administrators"
+  value       = aws_iam_policy.athena_admin_policy.arn
+}
+
+output "athena_admin_policy_name" {
+  description = "IAM policy name for Athena administrators"
+  value       = aws_iam_policy.athena_admin_policy.name
+}
+
+output "environment_isolation_info" {
+  description = "Environment isolation configuration details"
+  value = {
+    workgroup_name      = aws_athena_workgroup.main.name
+    database_name       = local.athena_database_name
+    allowed_environment = var.env
+    allowed_project     = var.project
+    allowed_app         = var.app
+    access_restrictions = {
+      only_assigned_workgroup = true
+      only_assigned_database  = true
+      deny_cross_environment  = true
     }
+  }
+}
+
+output "usage_instructions" {
+  description = "Usage instructions for environment-isolated Athena access"
+  value = {
+    for_users = "Users should assume the role: ${aws_iam_role.athena_workgroup_user_role.arn} to access workgroup: ${aws_athena_workgroup.main.name}"
+    for_admins = "Administrators should attach the policy: ${aws_iam_policy.athena_admin_policy.name} for full access to workgroup: ${aws_athena_workgroup.main.name}"
+    workgroup_url = "https://${var.aws_region}.console.aws.amazon.com/athena/home?region=${var.aws_region}#/workgroups/details/${aws_athena_workgroup.main.name}"
+    database_restriction = "Access is restricted to database: ${local.athena_database_name} only"
   }
 }

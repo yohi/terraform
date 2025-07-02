@@ -1,3 +1,9 @@
+-- Recent Logs Sample Query
+-- This query retrieves the most recent log entries from the specified table
+--
+-- TROUBLESHOOTING: If you encounter "COLUMN_NOT_FOUND: Column 'partition_0' cannot be resolved" error,
+-- run this command first: MSCK REPAIR TABLE ${database_name}."${table_name}";
+
 SELECT
     date,
     source,
