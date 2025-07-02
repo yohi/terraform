@@ -130,6 +130,10 @@ resource "aws_s3_bucket_lifecycle_configuration" "logs_bucket_lifecycle" {
     id     = "default_lifecycle"
     status = "Enabled"
 
+    filter {
+      prefix = ""
+    }
+
     transition {
       days          = 60
       storage_class = "STANDARD_IA"
