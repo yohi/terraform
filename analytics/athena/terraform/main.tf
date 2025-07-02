@@ -55,6 +55,9 @@ resource "aws_s3_bucket" "logs_bucket" {
 }
 
 # S3バケットのライフサイクル設定
+# TODO: 現在は全期間S3内に保持するためライフサイクルポリシーをコメントアウト
+# 必要に応じて以下のライフサイクル設定を有効にしてください
+/*
 resource "aws_s3_bucket_lifecycle_configuration" "logs_bucket_lifecycle" {
   count  = local.should_create_bucket ? 1 : 0
   bucket = aws_s3_bucket.logs_bucket[0].id
@@ -157,6 +160,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "logs_bucket_lifecycle" {
     }
   }
 }
+*/
 
 # S3バケットの暗号化設定
 resource "aws_s3_bucket_server_side_encryption_configuration" "logs_bucket_encryption" {
