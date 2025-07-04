@@ -1,0 +1,336 @@
+# MCPツールを活用したTerraform開発ワークフロー
+
+## 開発前の準備フェーズ
+
+### 1. AWSサービスの調査
+```
+# 新しいAWSサービスを利用する場合
+mcp_awslabs_aws-documentation-mcp-server_read_documentation を使用
+- サービスの概要を把握
+- 制限事項や要件を確認
+- ベストプラクティスを学習
+
+# 関連情報の収集
+mcp_awslabs_aws-documentation-mcp-server_recommend を使用
+- 関連サービスの発見
+- 新機能の確認
+- 統合パターンの学習
+```
+
+### 2. Terraformプロバイダーの確認
+```
+# AWSプロバイダーのリソース検索
+mcp_awslabs_terraform-mcp-server_SearchAwsProviderDocs を使用
+- 利用可能なリソースの確認
+- 必須パラメータの確認
+- 設定例の取得
+
+# AWSCCプロバイダーの検討
+mcp_awslabs_terraform-mcp-server_SearchAwsccProviderDocs を使用
+- Cloud Control API対応リソースの確認
+- 新機能の利用可能性をチェック
+```
+
+### 3. 既存モジュールの調査
+```
+# 公式モジュールの検索
+mcp_awslabs_terraform-mcp-server_SearchUserProvidedModule を使用
+- 既存モジュールの活用可能性を確認
+- 設定方法の学習
+- カスタマイズ方法の確認
+
+# AWS-IAモジュールの確認
+mcp_awslabs_terraform-mcp-server_SearchSpecificAwsIaModules を使用
+- 特定用途向けモジュールの確認
+- 企業向けソリューションの検討
+```
+
+## 開発フェーズ
+
+### 設計パターン
+```hcl
+# 1. データソースでの情報収集
+data "aws_caller_identity" "current" {}
+data "aws_region" "current" {}
+data "aws_availability_zones" "available" {
+  state = "available"
+}
+
+# 2. ローカル変数での共通設定
+locals {
+  account_id = data.aws_caller_identity.current.account_id
+  region     = data.aws_region.current.name
+
+  common_tags = {
+    Project     = var.project_name
+    Environment = var.environment
+    ManagedBy   = "Terraform"
+    Account     = local.account_id
+    Region      = local.region
+  }
+
+  name_prefix = "${var.project_name}-${var.environment}"
+}
+
+# 3. 条件分岐の活用
+resource "aws_s3_bucket" "this" {
+  count = var.create_bucket ? 1 : 0
+
+  bucket = "${local.name_prefix}-${var.bucket_suffix}"
+  tags   = local.common_tags
+}
+
+# 4. dynamic blockの活用
+resource "aws_security_group" "this" {
+  name   = "${local.name_prefix}-sg"
+  vpc_id = var.vpc_id
+
+  dynamic "ingress" {
+    for_each = var.ingress_rules
+    content {
+      description = ingress.value.description
+      from_port   = ingress.value.from_port
+      to_port     = ingress.value.to_port
+      protocol    = ingress.value.protocol
+      cidr_blocks = ingress.value.cidr_blocks
+    }
+  }
+
+  tags = local.common_tags
+}
+```
+
+### 環境別設定の管理
+```hcl
+# terraform.tfvars.dev
+project_name = "myproject"
+environment  = "dev"
+aws_region   = "ap-northeast-1"
+
+instance_type = "t3.micro"
+min_size     = 1
+max_size     = 3
+desired_capacity = 1
+
+# terraform.tfvars.prod
+project_name = "myproject"
+environment  = "prod"
+aws_region   = "ap-northeast-1"
+
+instance_type = "t3.medium"
+min_size     = 2
+max_size     = 10
+desired_capacity = 3
+```
+
+## 検証フェーズ
+
+### 1. セキュリティスキャン
+```bash
+# Checkovを使用したセキュリティスキャン
+mcp_awslabs_terraform-mcp-server_RunCheckovScan を使用
+- working_directory: プロジェクトのterraformディレクトリ
+- framework: "terraform"
+- output_format: "json"
+
+# 重要なセキュリティチェック項目
+- CKV_AWS_20: S3バケットのパブリックアクセス制限
+- CKV_AWS_21: S3バケットのバージョニング有効化
+- CKV_AWS_6: S3バケットの暗号化有効化
+- CKV_AWS_23: セキュリティグループの適切な設定
+```
+
+### 2. Terraform実行
+```bash
+# 初期化
+mcp_awslabs_terraform-mcp-server_ExecuteTerraformCommand
+- command: "init"
+- working_directory: "./terraform"
+
+# 実行計画の確認
+mcp_awslabs_terraform-mcp-server_ExecuteTerraformCommand
+- command: "plan"
+- working_directory: "./terraform"
+- variables: {
+    "project_name": "myproject",
+    "environment": "dev"
+  }
+
+# 適用
+mcp_awslabs_terraform-mcp-server_ExecuteTerraformCommand
+- command: "apply"
+- working_directory: "./terraform"
+- variables: {
+    "project_name": "myproject",
+    "environment": "dev"
+  }
+```
+
+## ECSデプロイメントの特別なワークフロー
+
+### 1. アプリケーションのコンテナ化
+```bash
+# アプリケーションのコンテナ化支援
+mcp_awslabs_ecs-mcp-server_containerize_app
+- app_path: "/path/to/your/app"
+- port: 8080
+```
+
+### 2. ECSインフラストラクチャーの作成
+```bash
+# ECSインフラの作成（テンプレート生成）
+mcp_awslabs_ecs-mcp-server_create_ecs_infrastructure
+- app_name: "myapp"
+- app_path: "/path/to/your/app"
+- force_deploy: false  # まずはテンプレート生成
+
+# 実際のデプロイ（段階的に実行）
+# Step 1: ECRとCloudFormationテンプレートの作成
+mcp_awslabs_ecs-mcp-server_create_ecs_infrastructure
+- app_name: "myapp"
+- app_path: "/path/to/your/app"
+- force_deploy: true
+- deployment_step: 1
+
+# Step 2: Dockerイメージのビルドとプッシュ
+mcp_awslabs_ecs-mcp-server_create_ecs_infrastructure
+- app_name: "myapp"
+- app_path: "/path/to/your/app"
+- force_deploy: true
+- deployment_step: 2
+
+# Step 3: ECSインフラストラクチャーのデプロイ
+mcp_awslabs_ecs-mcp-server_create_ecs_infrastructure
+- app_name: "myapp"
+- app_path: "/path/to/your/app"
+- force_deploy: true
+- deployment_step: 3
+```
+
+### 3. デプロイメント状況の確認
+```bash
+# デプロイメント状況の確認（30秒ごとに実行）
+mcp_awslabs_ecs-mcp-server_get_deployment_status
+- app_name: "myapp"
+```
+
+### 4. トラブルシューティング
+```bash
+# 問題発生時の診断
+mcp_awslabs_ecs-mcp-server_ecs_troubleshooting_tool
+- app_name: "myapp"
+- action: "get_ecs_troubleshooting_guidance"
+- parameters: {
+    "symptoms_description": "ALB returning 503 errors"
+  }
+
+# ログの確認
+mcp_awslabs_ecs-mcp-server_ecs_troubleshooting_tool
+- app_name: "myapp"
+- action: "fetch_task_logs"
+- parameters: {
+    "cluster_name": "myapp-cluster",
+    "filter_pattern": "ERROR",
+    "time_window": 1800
+  }
+```
+
+## ベストプラクティス
+
+### 1. 段階的なデプロイメント
+```
+開発環境 → ステージング環境 → 本番環境
+の順序でデプロイメントを実行
+```
+
+### 2. 設定管理
+```hcl
+# 環境別の設定ファイル管理
+terraform.tfvars.dev
+terraform.tfvars.staging
+terraform.tfvars.prod
+
+# 共通設定の分離
+common.tf
+dev.tf
+staging.tf
+prod.tf
+```
+
+### 3. 状態管理
+```hcl
+# リモートバックエンドの設定
+terraform {
+  backend "s3" {
+    bucket = "myproject-terraform-state"
+    key    = "environments/dev/terraform.tfstate"
+    region = "ap-northeast-1"
+
+    dynamodb_table = "myproject-terraform-locks"
+    encrypt        = true
+  }
+}
+```
+
+### 4. 監視とアラート
+```hcl
+# CloudWatch Alarmの設定
+resource "aws_cloudwatch_metric_alarm" "high_cpu" {
+  alarm_name          = "${local.name_prefix}-high-cpu"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "2"
+  metric_name         = "CPUUtilization"
+  namespace           = "AWS/ECS"
+  period              = "300"
+  statistic           = "Average"
+  threshold           = "80"
+  alarm_description   = "This metric monitors ecs cpu utilization"
+
+  alarm_actions = [aws_sns_topic.alerts.arn]
+
+  dimensions = {
+    ServiceName = aws_ecs_service.this.name
+    ClusterName = aws_ecs_cluster.this.name
+  }
+}
+```
+
+## トラブルシューティングガイド
+
+### 1. よくある問題
+```
+# プロバイダーバージョン不整合
+- versions.tf でバージョンを固定
+- terraform init -upgrade で更新
+
+# リソース作成エラー
+- IAM権限の確認
+- リソース制限の確認
+- 既存リソースとの競合確認
+
+# 状態ファイルの問題
+- terraform refresh で状態を同期
+- terraform import で既存リソースを取り込み
+```
+
+### 2. セキュリティ問題への対処
+```
+# Checkovエラーの修正
+- 具体的なエラーメッセージを確認
+- AWS文書でベストプラクティスを確認
+- 必要に応じてカスタムポリシーを作成
+```
+
+### 3. パフォーマンスの最適化
+```
+# 大きなインフラストラクチャーの場合
+- モジュール化によるコードの分割
+- 依存関係の最適化
+- 並列実行の活用
+```
+
+このワークフローに従うことで、MCPツールを効果的に活用してTerraformでAWSインフラストラクチャーを安全かつ効率的に管理できます。
+description:
+globs:
+alwaysApply: false
+---

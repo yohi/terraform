@@ -1,0 +1,180 @@
+# AWS Terraform開発ガイド
+
+## 基本原則
+- 常にセキュリティファーストの設計を行う
+- リソースグループとタグ戦略を一貫して適用する
+- モジュール化されたコードを書く
+- 環境分離を徹底する
+
+## プロジェクト構造の規則
+```
+service/
+  ├── terraform/
+  │   ├── main.tf          # メインのリソース定義
+  │   ├── variables.tf     # 変数定義
+  │   ├── outputs.tf       # 出力値定義
+  │   ├── versions.tf      # プロバイダーバージョン
+  │   └── terraform.tfvars.example  # 設定例
+  ├── templates/           # テンプレートファイル
+  └── README.md           # モジュール説明
+```
+
+## Terraform設定のベストプラクティス
+
+### 1. プロバイダー設定
+```hcl
+terraform {
+  required_version = ">= 1.0"
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
+
+provider "aws" {
+  region = var.aws_region
+
+  default_tags {
+    tags = {
+      Project     = var.project_name
+      Environment = var.environment
+      ManagedBy   = "Terraform"
+    }
+  }
+}
+```
+
+### 2. 変数定義の標準化
+```hcl
+variable "environment" {
+  description = "Environment name (dev, staging, prod)"
+  type        = string
+  validation {
+    condition     = contains(["dev", "staging", "prod"], var.environment)
+    error_message = "Environment must be dev, staging, or prod."
+  }
+}
+
+variable "project_name" {
+  description = "Project name for resource naming"
+  type        = string
+}
+
+variable "aws_region" {
+  description = "AWS region"
+  type        = string
+  default     = "ap-northeast-1"
+}
+```
+
+### 3. 命名規則
+- リソース名: `${var.project_name}-${var.environment}-${resource_type}`
+- タグ: Project, Environment, ManagedBy は必須
+- 変数: snake_case を使用
+- リソース: snake_case を使用
+
+## MCPツールの活用
+
+### AWS Documentation検索
+- `mcp_awslabs_aws-documentation-mcp-server_read_documentation` を使用してAWSドキュメントを参照
+- 新機能の確認には `recommend` 機能を活用
+
+### Terraform Provider検索
+- `mcp_awslabs_terraform-mcp-server_SearchAwsProviderDocs` でAWSプロバイダーのドキュメントを検索
+- `mcp_awslabs_terraform-mcp-server_SearchAwsccProviderDocs` でAWSCCプロバイダーも検討
+
+### セキュリティスキャン
+- `mcp_awslabs_terraform-mcp-server_RunCheckovScan` で定期的なセキュリティチェック
+- デプロイ前には必ずセキュリティスキャンを実行
+
+### モジュール検索
+- `mcp_awslabs_terraform-mcp-server_SearchUserProvidedModule` で既存モジュールを活用
+- `mcp_awslabs_terraform-mcp-server_SearchSpecificAwsIaModules` でAWS-IAモジュールを検索
+
+## 開発フロー
+
+### 1. 設計フェーズ
+1. AWS documentationでサービスの仕様を確認
+2. Terraform providerで利用可能なリソースを検索
+3. 既存モジュールの活用を検討
+4. セキュリティ要件を事前に確認
+
+### 2. 実装フェーズ
+1. `terraform.tfvars.example` を作成
+2. `variables.tf` で変数を定義
+3. `main.tf` でリソースを定義
+4. `outputs.tf` で出力値を定義
+
+### 3. 検証フェーズ
+1. `terraform validate` でシンタックスチェック
+2. `terraform plan` で実行計画を確認
+3. Checkovでセキュリティスキャンを実行
+4. READMEを更新
+
+### 4. デプロイフェーズ
+1. `terraform apply` で適用
+2. リソースの動作確認
+3. 必要に応じてタグやポリシーの調整
+
+## セキュリティ考慮事項
+
+### 必須チェック項目
+- [ ] IAMポリシーは最小権限の原則に従っているか
+- [ ] セキュリティグループの設定は適切か
+- [ ] 暗号化が有効になっているか
+- [ ] ログ記録が適切に設定されているか
+- [ ] パブリックアクセスの制限は適切か
+
+### 推奨設定
+```hcl
+# S3バケットのセキュリティ設定例
+resource "aws_s3_bucket_public_access_block" "example" {
+  bucket = aws_s3_bucket.example.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "example" {
+  bucket = aws_s3_bucket.example.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+```
+
+## ECSデプロイメント
+- ECSアプリケーションの場合は `mcp_awslabs_ecs-mcp-server_*` ツールを活用
+- コンテナ化の支援に `containerize_app` を使用
+- インフラ作成には `create_ecs_infrastructure` を使用
+
+## トラブルシューティング
+
+### よくある問題と対処法
+1. **プロバイダーバージョンの不整合**
+   - `versions.tf` でバージョンを明示的に指定
+   - `terraform init -upgrade` で更新
+
+2. **リソース名の重複**
+   - 環境とプロジェクト名を含む命名規則を徹底
+   - `random_id` リソースの活用を検討
+
+3. **権限不足エラー**
+   - IAMポリシーの確認
+   - AWSドキュメントで必要な権限を確認
+
+## 参考リソース
+- プロジェクト内の既存モジュール（analytics/、ec2/、load_balancer/等）
+- TERRAFORM-TAGS-STRATEGY.md でタグ戦略を確認
+- 各モジュールのREADMEを参照
+description:
+globs:
+alwaysApply: false
+---
