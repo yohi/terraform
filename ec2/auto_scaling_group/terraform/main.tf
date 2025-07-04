@@ -131,6 +131,19 @@ locals {
     local.env_tags,
     var.common_tags
   )
+
+  # ==================================================
+  # 安全なARN参照（カウントが0の場合のエラーを回避）
+  # ==================================================
+
+  # SNS Topic ARN（通知が有効な場合のみ）
+  sns_topic_arn = var.enable_notifications && length(aws_sns_topic.asg_notifications) > 0 ? aws_sns_topic.asg_notifications[0].arn : null
+
+  # スケールアップポリシーARN（有効な場合のみ）
+  scale_up_policy_arn = var.enable_scale_up_policy && length(aws_autoscaling_policy.scale_up) > 0 ? aws_autoscaling_policy.scale_up[0].arn : null
+
+  # スケールダウンポリシーARN（有効な場合のみ）
+  scale_down_policy_arn = var.enable_scale_down_policy && length(aws_autoscaling_policy.scale_down) > 0 ? aws_autoscaling_policy.scale_down[0].arn : null
 }
 
 # ==================================================
@@ -157,7 +170,7 @@ resource "aws_sns_topic" "asg_notifications" {
 resource "aws_sns_topic_subscription" "email_notifications" {
   count = var.enable_notifications && length(local.notification_endpoints) > 0 ? length(local.notification_endpoints) : 0
 
-  topic_arn = aws_sns_topic.asg_notifications[0].arn
+  topic_arn = local.sns_topic_arn
   protocol  = "email"
   endpoint  = local.notification_endpoints[count.index]
 }
@@ -268,7 +281,7 @@ resource "aws_autoscaling_notification" "asg_notifications" {
 
   notifications = var.notification_types
 
-  topic_arn = aws_sns_topic.asg_notifications[0].arn
+  topic_arn = local.sns_topic_arn
 }
 
 # ==================================================
@@ -288,8 +301,8 @@ resource "aws_cloudwatch_metric_alarm" "cpu_high" {
   statistic           = "Average"
   threshold           = var.cpu_high_threshold
   alarm_description   = "This metric monitors ec2 cpu utilization for ${local.name_prefix}"
-  alarm_actions       = var.enable_notifications ? [aws_sns_topic.asg_notifications[0].arn] : []
-  ok_actions          = var.enable_notifications ? [aws_sns_topic.asg_notifications[0].arn] : []
+  alarm_actions       = var.enable_notifications && local.sns_topic_arn != null ? [local.sns_topic_arn] : []
+  ok_actions          = var.enable_notifications && local.sns_topic_arn != null ? [local.sns_topic_arn] : []
 
   dimensions = {
     AutoScalingGroupName = aws_autoscaling_group.main.name
@@ -319,8 +332,8 @@ resource "aws_cloudwatch_metric_alarm" "cpu_low" {
   statistic           = "Average"
   threshold           = var.cpu_low_threshold
   alarm_description   = "This metric monitors ec2 cpu utilization for ${local.name_prefix}"
-  alarm_actions       = var.enable_notifications ? [aws_sns_topic.asg_notifications[0].arn] : []
-  ok_actions          = var.enable_notifications ? [aws_sns_topic.asg_notifications[0].arn] : []
+  alarm_actions       = var.enable_notifications && local.sns_topic_arn != null ? [local.sns_topic_arn] : []
+  ok_actions          = var.enable_notifications && local.sns_topic_arn != null ? [local.sns_topic_arn] : []
 
   dimensions = {
     AutoScalingGroupName = aws_autoscaling_group.main.name
@@ -430,7 +443,7 @@ resource "aws_cloudwatch_metric_alarm" "scale_up_alarm" {
   statistic           = var.scale_up_alarm_statistic
   threshold           = var.scale_up_alarm_threshold
   alarm_description   = "This metric triggers scale up for ${local.name_prefix}"
-  alarm_actions       = [aws_autoscaling_policy.scale_up[0].arn]
+  alarm_actions       = local.scale_up_policy_arn != null ? [local.scale_up_policy_arn] : []
 
   dimensions = {
     AutoScalingGroupName = aws_autoscaling_group.main.name
@@ -461,7 +474,7 @@ resource "aws_cloudwatch_metric_alarm" "scale_down_alarm" {
   statistic           = var.scale_down_alarm_statistic
   threshold           = var.scale_down_alarm_threshold
   alarm_description   = "This metric triggers scale down for ${local.name_prefix}"
-  alarm_actions       = [aws_autoscaling_policy.scale_down[0].arn]
+  alarm_actions       = local.scale_down_policy_arn != null ? [local.scale_down_policy_arn] : []
 
   dimensions = {
     AutoScalingGroupName = aws_autoscaling_group.main.name
