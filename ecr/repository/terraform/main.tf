@@ -83,9 +83,6 @@ locals {
 
   # 最終的なリポジトリポリシー
   repository_policy = var.repository_policy_json != "" ? var.repository_policy_json : local.default_repository_policy
-
-  # レプリケーション設定検証
-  replication_validation = var.enable_replication && length(var.replication_destinations) == 0 ? tobool("ERROR: replication_destinations must have at least one entry when enable_replication is true.") : true
 }
 
 # ==================================================
@@ -102,6 +99,13 @@ data "aws_region" "current" {}
 
 resource "aws_ecr_repository" "main" {
   for_each = { for repo in local.repositories : repo.name => repo }
+
+  lifecycle {
+    precondition {
+      condition     = each.value.encryption_type != "KMS" || each.value.kms_key_id != ""
+      error_message = "kms_key_id must not be empty when encryption_type is set to 'KMS'."
+    }
+  }
 
   name                 = each.value.name
   image_tag_mutability = each.value.image_tag_mutability

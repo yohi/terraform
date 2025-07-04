@@ -13,10 +13,26 @@ terraform {
   }
 }
 
+# ==================================================
+# 必須タグの強制設定
+# ==================================================
+
+locals {
+  # 必須タグを保証するために、var.common_tagsと必須タグをマージ
+  required_tags = {
+    Project     = var.project
+    Environment = var.env
+    ManagedBy   = "terraform"
+  }
+
+  # 最終的なタグ設定（common_tagsで上書き可能、ただし必須タグは保証）
+  final_tags = merge(var.common_tags, local.required_tags)
+}
+
 provider "aws" {
   region = var.aws_region
 
   default_tags {
-    tags = var.common_tags
+    tags = local.final_tags
   }
 }

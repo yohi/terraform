@@ -16,6 +16,10 @@ variable "project" {
 variable "env" {
   description = "環境名 (dev, stg, prod)"
   type        = string
+  validation {
+    condition     = contains(["dev", "stg", "prod"], var.env)
+    error_message = "env must be one of: dev, stg, prod."
+  }
 }
 
 variable "app" {

@@ -16,6 +16,11 @@ variable "project" {
 variable "env" {
   description = "環境名 (dev, stg, prod)"
   type        = string
+
+  validation {
+    condition     = contains(["dev", "stg", "prod"], var.env)
+    error_message = "env は dev, stg, prod のいずれかである必要があります。"
+  }
 }
 
 variable "app" {
@@ -98,6 +103,11 @@ variable "network_mode" {
   description = "ネットワークモード（awsvpc, bridge, host, none）"
   type        = string
   default     = "awsvpc"
+
+  validation {
+    condition     = contains(["awsvpc", "bridge", "host", "none"], var.network_mode)
+    error_message = "network_mode は awsvpc, bridge, host, none のいずれかである必要があります。"
+  }
 }
 
 variable "requires_compatibilities" {
@@ -194,6 +204,11 @@ variable "launch_type" {
   description = "起動タイプ（FARGATE, EC2）"
   type        = string
   default     = "FARGATE"
+
+  validation {
+    condition     = contains(["FARGATE", "EC2"], var.launch_type)
+    error_message = "launch_type は FARGATE または EC2 である必要があります。"
+  }
 }
 
 variable "platform_version" {

@@ -275,6 +275,13 @@ resource "aws_ecs_task_definition" "main" {
 
   container_definitions = jsonencode(local.container_definitions)
 
+  lifecycle {
+    precondition {
+      condition     = var.launch_type != "FARGATE" || var.network_mode == "awsvpc"
+      error_message = "Fargateを使用する場合、network_mode は awsvpc である必要があります。"
+    }
+  }
+
   tags = merge(
     var.common_tags,
     {
@@ -333,10 +340,6 @@ resource "aws_ecs_service" "main" {
       Name = local.service_name
     }
   )
-
-  depends_on = [
-    aws_iam_role_policy_attachment.execution_role_policy[0]
-  ]
 }
 
 # ==================================================
