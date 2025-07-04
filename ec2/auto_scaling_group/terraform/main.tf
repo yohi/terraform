@@ -141,7 +141,7 @@ resource "aws_sns_topic" "asg_notifications" {
   count = var.enable_notifications ? 1 : 0
 
   name              = "${local.name_prefix}-asg-notifications"
-  kms_master_key_id = var.sns_kms_key_id
+  kms_master_key_id = var.sns_kms_key_id != null && var.sns_kms_key_id != "" ? var.sns_kms_key_id : null
 
   tags = merge(
     local.final_common_tags,
@@ -346,9 +346,9 @@ resource "aws_autoscaling_policy" "scale_up" {
   count = var.enable_scale_up_policy ? 1 : 0
 
   name                   = "${local.name_prefix}-asg-scale-up"
-  scaling_adjustment     = var.scale_up_adjustment
-  adjustment_type        = var.scale_up_adjustment_type
-  cooldown               = var.scale_up_cooldown
+  scaling_adjustment     = var.scale_up_policy_type == "TargetTrackingScaling" ? null : var.scale_up_adjustment
+  adjustment_type        = var.scale_up_policy_type == "TargetTrackingScaling" ? null : var.scale_up_adjustment_type
+  cooldown               = var.scale_up_policy_type == "TargetTrackingScaling" ? null : var.scale_up_cooldown
   autoscaling_group_name = aws_autoscaling_group.main.name
   policy_type            = var.scale_up_policy_type
 
@@ -382,9 +382,9 @@ resource "aws_autoscaling_policy" "scale_down" {
   count = var.enable_scale_down_policy ? 1 : 0
 
   name                   = "${local.name_prefix}-asg-scale-down"
-  scaling_adjustment     = var.scale_down_adjustment
-  adjustment_type        = var.scale_down_adjustment_type
-  cooldown               = var.scale_down_cooldown
+  scaling_adjustment     = var.scale_down_policy_type == "TargetTrackingScaling" ? null : var.scale_down_adjustment
+  adjustment_type        = var.scale_down_policy_type == "TargetTrackingScaling" ? null : var.scale_down_adjustment_type
+  cooldown               = var.scale_down_policy_type == "TargetTrackingScaling" ? null : var.scale_down_cooldown
   autoscaling_group_name = aws_autoscaling_group.main.name
   policy_type            = var.scale_down_policy_type
 
