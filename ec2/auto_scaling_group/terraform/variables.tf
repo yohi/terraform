@@ -62,9 +62,15 @@ variable "availability_zones" {
 # ==================================================
 
 variable "desired_capacity" {
-  description = "オートスケーリンググループの希望インスタンス数（最小インスタンス数は同じ値、最大インスタンス数は2倍に設定される）"
+  description = "オートスケーリンググループの希望インスタンス数（最大インスタンス数は2倍に設定される）"
   type        = number
   default     = 2
+}
+
+variable "min_size" {
+  description = "オートスケーリンググループの最小インスタンス数（0に設定することで完全なスケールダウンが可能）"
+  type        = number
+  default     = 0
 }
 
 variable "health_check_type" {

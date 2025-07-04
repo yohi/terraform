@@ -163,7 +163,9 @@ resource "aws_sns_topic_subscription" "email_notifications" {
 resource "aws_autoscaling_group" "main" {
   name                = local.asg_name
   vpc_zone_identifier = local.subnet_ids
-  availability_zones  = length(var.subnet_ids) == 0 ? local.availability_zones : null
+
+  # subnet_idsが空の場合のみavailability_zonesを設定（nullを避けるため条件付きで属性を含める）
+  availability_zones = length(var.subnet_ids) == 0 ? local.availability_zones : []
 
   # 起動テンプレート設定
   launch_template {
@@ -171,8 +173,8 @@ resource "aws_autoscaling_group" "main" {
     version = var.launch_template_version
   }
 
-  # インスタンス数設定（希望インスタンス数をベースに自動計算）
-  min_size         = var.desired_capacity
+  # インスタンス数設定（最小・希望・最大インスタンス数の設定）
+  min_size         = var.min_size
   max_size         = var.desired_capacity * 2
   desired_capacity = var.desired_capacity
 

@@ -3,7 +3,7 @@
 # Terraformで作成されたリソースを検索するスクリプト
 # 使用方法: ./search_terraform_resources.sh [project_name] [environment]
 
-set -e
+set -euo pipefail
 
 # 色付きoutput用
 RED='\033[0;31m'
@@ -28,25 +28,25 @@ fi
 echo
 
 # タグフィルタの構築
-TAG_FILTERS="Key=ManagedBy,Values=terraform"
+TAG_FILTERS=("Key=ManagedBy,Values=terraform")
 if [ -n "$PROJECT_NAME" ]; then
-    TAG_FILTERS="$TAG_FILTERS Key=Project,Values=$PROJECT_NAME"
+    TAG_FILTERS+=("Key=Project,Values=$PROJECT_NAME")
 fi
 if [ -n "$ENVIRONMENT" ]; then
-    TAG_FILTERS="$TAG_FILTERS Key=Environment,Values=$ENVIRONMENT"
+    TAG_FILTERS+=("Key=Environment,Values=$ENVIRONMENT")
 fi
 
 # すべてのリソースを検索
 echo -e "${YELLOW}=== 全リソース検索 ===${NC}"
 aws resourcegroupstaggingapi get-resources \
-    --tag-filters $TAG_FILTERS \
+    --tag-filters "${TAG_FILTERS[@]}" \
     --query 'ResourceTagMappingList[].[ResourceARN, Tags[?Key==`Name`].Value|[0] || `N/A`]' \
     --output table
 
 # リソースタイプ別のカウント
 echo -e "${YELLOW}=== リソースタイプ別集計 ===${NC}"
 aws resourcegroupstaggingapi get-resources \
-    --tag-filters $TAG_FILTERS \
+    --tag-filters "${TAG_FILTERS[@]}" \
     --query 'ResourceTagMappingList[].ResourceARN' \
     --output text | \
     sed 's/.*:\([^:]*\):.*/\1/' | \
@@ -55,21 +55,21 @@ aws resourcegroupstaggingapi get-resources \
 # 特定のリソースタイプの詳細
 echo -e "${YELLOW}=== EC2インスタンス詳細 ===${NC}"
 aws resourcegroupstaggingapi get-resources \
-    --tag-filters $TAG_FILTERS \
+    --tag-filters "${TAG_FILTERS[@]}" \
     --resource-type-filters EC2:Instance \
     --query 'ResourceTagMappingList[].[ResourceARN, Tags[?Key==`Name`].Value|[0] || `N/A`]' \
     --output table
 
 echo -e "${YELLOW}=== S3バケット詳細 ===${NC}"
 aws resourcegroupstaggingapi get-resources \
-    --tag-filters $TAG_FILTERS \
+    --tag-filters "${TAG_FILTERS[@]}" \
     --resource-type-filters S3:Bucket \
     --query 'ResourceTagMappingList[].[ResourceARN, Tags[?Key==`Name`].Value|[0] || `N/A`]' \
     --output table
 
 echo -e "${YELLOW}=== Auto Scaling Group詳細 ===${NC}"
 aws resourcegroupstaggingapi get-resources \
-    --tag-filters $TAG_FILTERS \
+    --tag-filters "${TAG_FILTERS[@]}" \
     --resource-type-filters AutoScaling:AutoScalingGroup \
     --query 'ResourceTagMappingList[].[ResourceARN, Tags[?Key==`Name`].Value|[0] || `N/A`]' \
     --output table

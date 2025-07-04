@@ -3,7 +3,7 @@
 # Terraform Apply with AWS Account Confirmation Script
 # This script displays AWS account information and asks for confirmation before running terraform apply
 
-set -e
+set -euo pipefail
 
 echo ""
 echo "=========================================="
@@ -13,6 +13,18 @@ echo "=========================================="
 # Check if AWS CLI is configured
 if ! command -v aws &> /dev/null; then
     echo "❌ AWS CLI is not installed or not in PATH"
+    exit 1
+fi
+
+# Check if jq is installed
+if ! command -v jq &> /dev/null; then
+    echo "❌ jq is not installed or not in PATH"
+    exit 1
+fi
+
+# Check if terraform is installed
+if ! command -v terraform &> /dev/null; then
+    echo "❌ terraform is not installed or not in PATH"
     exit 1
 fi
 
