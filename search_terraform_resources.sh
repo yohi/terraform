@@ -82,7 +82,8 @@ END_DATE=$(date +%Y-%m-%d)
 if [ -n "$PROJECT_NAME" ] && [ -n "$ENVIRONMENT" ]; then
     aws ce get-cost-and-usage \
         --time-period Start=$START_DATE,End=$END_DATE \
-        --group-by Type=TAG,Key=Project Type=TAG,Key=Environment \
+        --group-by Type=TAG,Key=Project \
+        --group-by Type=TAG,Key=Environment \
         --granularity MONTHLY \
         --metrics BlendedCost \
         --filter '{

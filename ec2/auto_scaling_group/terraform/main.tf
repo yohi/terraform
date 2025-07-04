@@ -164,8 +164,8 @@ resource "aws_autoscaling_group" "main" {
   name                = local.asg_name
   vpc_zone_identifier = local.subnet_ids
 
-  # subnet_idsが空の場合のみavailability_zonesを設定（nullを避けるため条件付きで属性を含める）
-  availability_zones = length(var.subnet_ids) == 0 ? local.availability_zones : []
+  # subnet_idsが空の場合のみavailability_zonesを設定（nullを使用して属性を省略）
+  availability_zones = length(var.subnet_ids) == 0 ? local.availability_zones : null
 
   # 起動テンプレート設定
   launch_template {
@@ -224,7 +224,7 @@ resource "aws_autoscaling_group" "main" {
     content {
       key                 = tag.key
       value               = tag.value.value
-      propagate_at_launch = tag.value.propagate_at_launch
+      propagate_at_launch = try(tag.value.propagate_at_launch, true)
     }
   }
 
