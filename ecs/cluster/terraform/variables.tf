@@ -16,6 +16,11 @@ variable "project" {
 variable "env" {
   description = "環境名 (dev, stg, prod)"
   type        = string
+
+  validation {
+    condition     = contains(["dev", "stg", "prod"], var.env)
+    error_message = "env must be one of the following values: dev, stg, or prod."
+  }
 }
 
 variable "app" {
@@ -117,7 +122,14 @@ variable "enable_service_connect" {
 }
 
 variable "service_connect_namespace" {
-  description = "Service Connect名前空間"
+  description = "Service Connect名前空間（enable_service_connectがtrueの場合は必須）"
   type        = string
   default     = ""
+
+  # NOTE: Terraformの変数validation blockは他の変数を参照できないため、
+  # enable_service_connectがtrueの場合の空文字チェックは main.tf 内で実装する必要があります
+  validation {
+    condition     = var.service_connect_namespace == "" || can(regex("^[a-zA-Z0-9][a-zA-Z0-9-_]{0,62}[a-zA-Z0-9]$", var.service_connect_namespace))
+    error_message = "service_connect_namespace must be a valid namespace name (1-64 characters, alphanumeric, hyphens, and underscores only, cannot start/end with special characters) when provided. This value is required when enable_service_connect is true."
+  }
 }

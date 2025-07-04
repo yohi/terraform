@@ -203,6 +203,7 @@ module "shared_ecr_repository" {
 | `repository_urls`          | ECRリポジトリURLのマップ   |
 | `repository_arns`          | ECRリポジトリARNのマップ   |
 | `repository_names`         | ECRリポジトリ名のマップ    |
+| `registry_ids`             | ECRレジストリIDのマップ    |
 | `repository_image_uris`    | latest タグ付きURIのマップ |
 | `repository_push_commands` | docker pushコマンドの例    |
 

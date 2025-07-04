@@ -155,6 +155,7 @@ variable "container_memory" {
 variable "container_memory_reservation" {
   description = "コンテナメモリ予約（MiB）"
   type        = number
+  nullable    = true
   default     = null
 }
 

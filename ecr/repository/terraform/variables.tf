@@ -47,7 +47,7 @@ variable "repositories" {
     image_tag_mutability = optional(string, "MUTABLE")
     scan_on_push         = optional(bool, true)
     encryption_type      = optional(string, "AES256")
-    kms_key_id          = optional(string, "")
+    kms_key_id           = optional(string, "")
   }))
   default = []
 }
@@ -82,6 +82,10 @@ variable "kms_key_id" {
   description = "KMS暗号化キーID（encryption_type=KMSの場合に指定）"
   type        = string
   default     = ""
+  validation {
+    condition     = var.encryption_type == "KMS" ? var.kms_key_id != "" : true
+    error_message = "kms_key_id must not be empty when encryption_type is 'KMS'."
+  }
 }
 
 # ==================================================
@@ -155,15 +159,22 @@ variable "allowed_actions" {
 # ==================================================
 
 variable "enable_replication" {
-  description = "レプリケーションを有効にするか"
+  description = "レプリケーションを有効にするか（trueの場合はreplication_destinationsが必須）"
   type        = bool
   default     = false
 }
 
 variable "replication_destinations" {
-  description = "レプリケーション先リージョンのリスト"
+  description = "レプリケーション先リージョンのリスト（enable_replicationがtrueの場合は必須）"
   type        = list(string)
   default     = []
+
+  validation {
+    condition = length(var.replication_destinations) > 0 ? alltrue([
+      for region in var.replication_destinations : can(regex("^[a-z]{2}-[a-z]+-[0-9]+$", region))
+    ]) : true
+    error_message = "replication_destinations must contain valid AWS region names (e.g., 'us-east-1', 'ap-northeast-1') when specified."
+  }
 }
 
 # ==================================================
@@ -180,4 +191,9 @@ variable "upstream_registry_url" {
   description = "上流レジストリURL（プル経由キャッシュ用）"
   type        = string
   default     = ""
+
+  validation {
+    condition     = var.enable_pull_through_cache ? var.upstream_registry_url != "" : true
+    error_message = "upstream_registry_url must not be empty when enable_pull_through_cache is true."
+  }
 }

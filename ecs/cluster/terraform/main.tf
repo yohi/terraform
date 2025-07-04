@@ -8,6 +8,20 @@ locals {
 
   # Execute Command用ロググループ名の決定
   execute_command_log_group_name = var.execute_command_log_group_name != "" ? var.execute_command_log_group_name : "/aws/ecs/execute-command/${local.cluster_name}"
+
+  # Service Connect設定の検証（実際の検証は下記のcheckブロックで実行）
+  service_connect_enabled = var.enable_service_connect
+}
+
+# ==================================================
+# Service Connect設定の検証
+# ==================================================
+
+check "service_connect_namespace_validation" {
+  assert {
+    condition     = !var.enable_service_connect || var.service_connect_namespace != ""
+    error_message = "service_connect_namespace must not be empty when enable_service_connect is true. Please provide a valid namespace name."
+  }
 }
 
 # ==================================================

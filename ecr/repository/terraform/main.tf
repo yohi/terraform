@@ -15,7 +15,7 @@ locals {
       image_tag_mutability = var.image_tag_mutability
       scan_on_push         = var.scan_on_push
       encryption_type      = var.encryption_type
-      kms_key_id          = var.kms_key_id
+      kms_key_id           = var.kms_key_id
     }
   ]
 
@@ -26,9 +26,9 @@ locals {
         rulePriority = 1
         description  = "Keep last ${var.untagged_image_count_limit} untagged images"
         selection = {
-          tagStatus     = "untagged"
-          countType     = "imageCountMoreThan"
-          countNumber   = var.untagged_image_count_limit
+          tagStatus   = "untagged"
+          countType   = "imageCountMoreThan"
+          countNumber = var.untagged_image_count_limit
         }
         action = {
           type = "expire"
@@ -83,6 +83,9 @@ locals {
 
   # 最終的なリポジトリポリシー
   repository_policy = var.repository_policy_json != "" ? var.repository_policy_json : local.default_repository_policy
+
+  # レプリケーション設定検証
+  replication_validation = var.enable_replication && length(var.replication_destinations) == 0 ? tobool("ERROR: replication_destinations must have at least one entry when enable_replication is true.") : true
 }
 
 # ==================================================
@@ -109,7 +112,7 @@ resource "aws_ecr_repository" "main" {
 
   encryption_configuration {
     encryption_type = each.value.encryption_type
-    kms_key        = each.value.encryption_type == "KMS" && each.value.kms_key_id != "" ? each.value.kms_key_id : null
+    kms_key         = each.value.encryption_type == "KMS" && each.value.kms_key_id != "" ? each.value.kms_key_id : null
   }
 
   tags = merge(
@@ -148,6 +151,13 @@ resource "aws_ecr_repository_policy" "main" {
 
 resource "aws_ecr_replication_configuration" "main" {
   count = var.enable_replication && length(var.replication_destinations) > 0 ? 1 : 0
+
+  lifecycle {
+    precondition {
+      condition     = !var.enable_replication || length(var.replication_destinations) > 0
+      error_message = "replication_destinations must have at least one entry when enable_replication is true."
+    }
+  }
 
   replication_configuration {
     rule {

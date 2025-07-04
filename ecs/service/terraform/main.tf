@@ -58,32 +58,35 @@ locals {
   ]
 
   # デフォルトコンテナ定義
-  default_container_definition = {
-    name      = local.container_name
-    image     = var.container_image
-    cpu       = var.container_cpu
-    memory    = var.container_memory
-    essential = true
+  default_container_definition = merge(
+    {
+      name      = local.container_name
+      image     = var.container_image
+      cpu       = var.container_cpu
+      memory    = var.container_memory
+      essential = true
 
-    portMappings = [
-      {
-        containerPort = var.container_port
-        protocol      = var.container_protocol
+      portMappings = [
+        {
+          containerPort = var.container_port
+          protocol      = var.container_protocol
+        }
+      ]
+
+      environment = local.environment
+      secrets     = var.secrets
+    },
+    var.enable_logging ? {
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = aws_cloudwatch_log_group.main[0].name
+          "awslogs-region"        = var.aws_region
+          "awslogs-stream-prefix" = var.log_stream_prefix
+        }
       }
-    ]
-
-    environment = local.environment
-    secrets     = var.secrets
-
-    logConfiguration = var.enable_logging ? {
-      logDriver = "awslogs"
-      options = {
-        "awslogs-group"         = aws_cloudwatch_log_group.main[0].name
-        "awslogs-region"        = var.aws_region
-        "awslogs-stream-prefix" = var.log_stream_prefix
-      }
-    } : null
-  }
+    } : {}
+  )
 
   # 最終的なコンテナ定義
   container_definitions = length(var.container_definitions) > 0 ? var.container_definitions : [local.default_container_definition]
@@ -285,11 +288,11 @@ resource "aws_ecs_task_definition" "main" {
 # ==================================================
 
 resource "aws_ecs_service" "main" {
-  name            = local.service_name
-  cluster         = var.cluster_name
-  task_definition = aws_ecs_task_definition.main.arn
-  desired_count   = var.desired_count
-  launch_type     = var.launch_type
+  name             = local.service_name
+  cluster          = var.cluster_name
+  task_definition  = aws_ecs_task_definition.main.arn
+  desired_count    = var.desired_count
+  launch_type      = var.launch_type
   platform_version = var.launch_type == "FARGATE" ? var.platform_version : null
 
   enable_execute_command = var.enable_execute_command
@@ -332,7 +335,7 @@ resource "aws_ecs_service" "main" {
   )
 
   depends_on = [
-    aws_iam_role_policy_attachment.execution_role_policy
+    aws_iam_role_policy_attachment.execution_role_policy[0]
   ]
 }
 
