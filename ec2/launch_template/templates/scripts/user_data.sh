@@ -139,8 +139,115 @@ log "Mackerel Agent configuration completed"
 
 %{ if custom_user_data != "" }
 log "Executing custom user data"
-${custom_user_data}
-log "Custom user data execution completed"
+
+# カスタムユーザーデータのサニタイゼーション関数
+sanitize_user_data() {
+    local user_data="$1"
+
+    # 危険なコマンドのブラックリスト
+    local dangerous_commands=(
+        "rm -rf"
+        "format"
+        "mkfs"
+        "dd if="
+        "shutdown"
+        "reboot"
+        "halt"
+        "init 0"
+        "init 6"
+        "> /dev/"
+        "curl.*|.*sh"
+        "wget.*|.*sh"
+        "eval"
+        "exec"
+        "|sh"
+        "|bash"
+        "&& sh"
+        "&& bash"
+        ";sh"
+        ";bash"
+    )
+
+    # 危険なコマンドの検出
+    for cmd in "$${dangerous_commands[@]}"; do
+        if [[ "$user_data" =~ $cmd ]]; then
+            log "ERROR: Dangerous command detected in custom_user_data: $cmd"
+            log "Custom user data execution blocked for security reasons"
+            return 1
+        fi
+    done
+
+    # 許可されたコマンドのホワイトリスト（必要に応じて拡張）
+    local allowed_commands=(
+        "echo"
+        "mkdir"
+        "chmod"
+        "chown"
+        "cp"
+        "mv"
+        "ln"
+        "touch"
+        "systemctl"
+        "service"
+        "yum install"
+        "apt install"
+        "pip install"
+        "export"
+        "source"
+    )
+
+    # 基本的なコマンド形式の検証
+    if [[ ! "$user_data" =~ ^[a-zA-Z0-9_./\-[:space:]=\"\'\$\{\}]+$ ]]; then
+        log "ERROR: Invalid characters detected in custom_user_data"
+        log "Custom user data execution blocked for security reasons"
+        return 1
+    fi
+
+    return 0
+}
+
+# カスタムユーザーデータの安全な実行
+execute_custom_user_data() {
+    local user_data='${custom_user_data}'
+
+    # 空でない場合のみ処理
+    if [[ -n "$user_data" ]]; then
+        log "Validating custom user data for security"
+
+        # サニタイゼーション実行
+        if sanitize_user_data "$user_data"; then
+            log "Custom user data validation passed"
+
+            # 一時ファイルに書き込み
+            local temp_script="/tmp/custom_user_data_$$.sh"
+            echo "#!/bin/bash" > "$temp_script"
+            echo "set -euo pipefail" >> "$temp_script"
+            echo "$user_data" >> "$temp_script"
+
+            # 実行権限を付与
+            chmod 755 "$temp_script"
+
+            # 実行
+            if bash "$temp_script"; then
+                log "Custom user data executed successfully"
+            else
+                log "ERROR: Custom user data execution failed"
+            fi
+
+            # 一時ファイルを削除
+            rm -f "$temp_script"
+        else
+            log "ERROR: Custom user data validation failed - execution blocked"
+        fi
+    else
+        log "No custom user data provided"
+    fi
+}
+
+# カスタムユーザーデータの実行
+execute_custom_user_data
+
+log "Custom user data processing completed"
 %{ endif }
 
 # ==================================================
@@ -151,11 +258,11 @@ log "EC2 User Data Script completed successfully"
 
 # システム情報をログに出力
 log "System Information:"
-log "  - AMI ID: $(ec2-metadata --ami-id | cut -d ' ' -f 2)"
-log "  - Instance ID: $(ec2-metadata --instance-id | cut -d ' ' -f 2)"
-log "  - Instance Type: $(ec2-metadata --instance-type | cut -d ' ' -f 2)"
+log "  - AMI ID: $(curl -s http://169.254.169.254/latest/meta-data/ami-id)"
+log "  - Instance ID: $(curl -s http://169.254.169.254/latest/meta-data/instance-id)"
+log "  - Instance Type: $(curl -s http://169.254.169.254/latest/meta-data/instance-type)"
 log "  - Hostname: $(hostname)"
-log "  - Private IP: $(ec2-metadata --local-ipv4 | cut -d ' ' -f 2)"
+log "  - Private IP: $(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)"
 
 # 起動完了の通知
 log "Instance initialization completed successfully"

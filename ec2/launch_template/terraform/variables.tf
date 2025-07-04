@@ -33,7 +33,7 @@ variable "app" {
 variable "ami_name_filter" {
   description = "AMI検索用の名前フィルター"
   type        = list(string)
-  default     = ["amzn2-ami-ecs-hvm-*-x86_64-ebs"]
+  default     = ["amzn2023-ami-ecs-*"]
 }
 
 # ==================================================
@@ -310,8 +310,70 @@ variable "common_tags" {
   description = "全リソースに適用する共通タグ"
   type        = map(string)
   default = {
-    Environment = "dev"
-    Project     = "my-project"
+    Environment = var.env
+    Project     = var.project
     ManagedBy   = "terraform"
   }
+
+variable "owner_team" {
+  description = "リソースの所有者チーム"
+  type        = string
+  default     = "devops-team"
+}
+
+variable "owner_email" {
+  description = "リソースの所有者チームのメールアドレス"
+  type        = string
+  default     = "devops@example.com"
+}
+
+variable "cost_center" {
+  description = "コストセンター"
+  type        = string
+  default     = "engineering"
+}
+
+variable "billing_code" {
+  description = "請求コード"
+  type        = string
+  default     = ""
+}
+
+variable "data_classification" {
+  description = "データ分類レベル (public, internal, confidential, restricted)"
+  type        = string
+  default     = "internal"
+
+  validation {
+    condition     = contains(["public", "internal", "confidential", "restricted"], var.data_classification)
+    error_message = "data_classification は 'public', 'internal', 'confidential', 'restricted' のいずれかである必要があります。"
+}
+
+variable "backup_required" {
+  description = "バックアップが必要かどうか"
+  type        = bool
+  default     = true
+}
+
+variable "monitoring_level" {
+  description = "監視レベル (basic, enhanced)"
+  type        = string
+  default     = "basic"
+
+  validation {
+    condition     = contains(["basic", "enhanced"], var.monitoring_level)
+    error_message = "monitoring_level は 'basic' または 'enhanced' である必要があります。"
+  }
+}
+
+variable "schedule" {
+  description = "運用スケジュール (24x7, business-hours)"
+  type        = string
+  default     = "24x7"
+}
+
+variable "common_tags" {
+  description = "全リソースに適用する共通タグ（追加・上書き用）"
+  type        = map(string)
+  default     = {}
 }
