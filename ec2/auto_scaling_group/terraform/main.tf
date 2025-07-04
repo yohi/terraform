@@ -2,6 +2,12 @@
 # データソース
 # ==================================================
 
+# 現在のAWSアカウント情報取得
+data "aws_caller_identity" "current" {}
+
+# 現在のAWSリージョン取得
+data "aws_region" "current" {}
+
 # デフォルトVPCの取得
 data "aws_vpc" "default" {
   default = true
@@ -54,6 +60,71 @@ locals {
 
   # 通知エンドポイントの決定
   notification_endpoints = length(var.notification_email_addresses) > 0 ? var.notification_email_addresses : []
+
+  # ==================================================
+  # タグ戦略の実装
+  # ==================================================
+
+  # 基本タグ（すべてのリソースに適用）
+  base_tags = {
+    "ManagedBy"          = "terraform"
+    "TerraformWorkspace" = terraform.workspace
+    "Project"            = var.project
+    "Environment"        = var.env
+    "Application"        = var.app
+    "CreatedAt"          = formatdate("YYYY-MM-DD", timestamp())
+    "CreatedBy"          = data.aws_caller_identity.current.user_id
+    "AccountId"          = data.aws_caller_identity.current.account_id
+    "Region"             = data.aws_region.current.name
+  }
+
+  # 運用管理タグ
+  operational_tags = {
+    "Owner"           = var.owner_team
+    "OwnerEmail"      = var.owner_email
+    "CostCenter"      = var.cost_center
+    "BillingCode"     = var.billing_code != "" ? var.billing_code : "PROJ-2024-${var.project}"
+    "Schedule"        = var.schedule
+    "BackupRequired"  = var.backup_required ? "yes" : "no"
+    "MonitoringLevel" = var.monitoring_level
+  }
+
+  # セキュリティ・コンプライアンス タグ
+  security_tags = {
+    "DataClassification" = var.data_classification
+    "Encryption"         = "required"
+    "NetworkAccess"      = "vpc-only"
+  }
+
+  # 環境固有タグ
+  env_tags = var.env == "prod" ? {
+    "CriticalityLevel" = "high"
+    "AuditRequired"    = "yes"
+    "RetentionPeriod"  = "7-years"
+    } : {
+    "CriticalityLevel" = "medium"
+    "AuditRequired"    = "no"
+    "RetentionPeriod"  = "1-year"
+  }
+
+  # サービス固有タグ
+  service_tags = {
+    "Service"     = "compute"
+    "Component"   = "auto-scaling-group"
+    "Tier"        = "application"
+    "AutoScaling" = "enabled"
+    "HealthCheck" = var.health_check_type
+  }
+
+  # 最終的な共通タグ（優先度: 追加タグ > 共通タグ > 環境固有 > セキュリティ > 運用 > サービス > 基本）
+  final_common_tags = merge(
+    local.base_tags,
+    local.service_tags,
+    local.operational_tags,
+    local.security_tags,
+    local.env_tags,
+    var.common_tags
+  )
 }
 
 # ==================================================
@@ -63,13 +134,15 @@ locals {
 resource "aws_sns_topic" "asg_notifications" {
   count = var.enable_notifications ? 1 : 0
 
-  name            = "${local.name_prefix}-asg-notifications"
+  name              = "${local.name_prefix}-asg-notifications"
   kms_master_key_id = var.sns_kms_key_id
 
   tags = merge(
-    var.common_tags,
+    local.final_common_tags,
     {
-      Name = "${local.name_prefix}-asg-notifications"
+      Name      = "${local.name_prefix}-asg-notifications"
+      Component = "sns"
+      Purpose   = "auto-scaling-notifications"
     }
   )
 }
@@ -131,7 +204,7 @@ resource "aws_autoscaling_group" "main" {
   # タグ設定
   dynamic "tag" {
     for_each = merge(
-      var.common_tags,
+      local.final_common_tags,
       {
         Name = "${local.name_prefix}-asg-instance"
       }
@@ -215,9 +288,12 @@ resource "aws_cloudwatch_metric_alarm" "cpu_high" {
   }
 
   tags = merge(
-    var.common_tags,
+    local.final_common_tags,
     {
-      Name = "${local.name_prefix}-asg-cpu-high-alarm"
+      Name      = "${local.name_prefix}-asg-cpu-high-alarm"
+      Component = "cloudwatch-alarm"
+      Purpose   = "cpu-monitoring"
+      Threshold = tostring(var.cpu_high_threshold)
     }
   )
 }
@@ -243,9 +319,12 @@ resource "aws_cloudwatch_metric_alarm" "cpu_low" {
   }
 
   tags = merge(
-    var.common_tags,
+    local.final_common_tags,
     {
-      Name = "${local.name_prefix}-asg-cpu-low-alarm"
+      Name      = "${local.name_prefix}-asg-cpu-low-alarm"
+      Component = "cloudwatch-alarm"
+      Purpose   = "cpu-monitoring"
+      Threshold = tostring(var.cpu_low_threshold)
     }
   )
 }
@@ -310,6 +389,20 @@ resource "aws_autoscaling_policy" "scale_down" {
       metric_interval_upper_bound = step_adjustment.value.metric_interval_upper_bound
     }
   }
+
+  # ターゲット追跡設定（policy_typeがTargetTrackingScalingの場合）
+  dynamic "target_tracking_configuration" {
+    for_each = var.scale_down_policy_type == "TargetTrackingScaling" ? [1] : []
+    content {
+      target_value = var.target_tracking_target_value_down
+
+      predefined_metric_specification {
+        predefined_metric_type = var.target_tracking_metric_type_down
+      }
+
+      disable_scale_in = var.target_tracking_disable_scale_in_down
+    }
+  }
 }
 
 # ==================================================
@@ -336,9 +429,13 @@ resource "aws_cloudwatch_metric_alarm" "scale_up_alarm" {
   }
 
   tags = merge(
-    var.common_tags,
+    local.final_common_tags,
     {
-      Name = "${local.name_prefix}-asg-scale-up-alarm"
+      Name      = "${local.name_prefix}-asg-scale-up-alarm"
+      Component = "cloudwatch-alarm"
+      Purpose   = "auto-scaling"
+      ScaleType = "scale-up"
+      Threshold = tostring(var.scale_up_alarm_threshold)
     }
   )
 }
@@ -363,9 +460,13 @@ resource "aws_cloudwatch_metric_alarm" "scale_down_alarm" {
   }
 
   tags = merge(
-    var.common_tags,
+    local.final_common_tags,
     {
-      Name = "${local.name_prefix}-asg-scale-down-alarm"
+      Name      = "${local.name_prefix}-asg-scale-down-alarm"
+      Component = "cloudwatch-alarm"
+      Purpose   = "auto-scaling"
+      ScaleType = "scale-down"
+      Threshold = tostring(var.scale_down_alarm_threshold)
     }
   )
 }
