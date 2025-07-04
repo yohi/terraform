@@ -182,6 +182,7 @@ resource "aws_s3_bucket_versioning" "example" {
 - プロジェクト内の既存モジュール（analytics/、ec2/、load_balancer/等）
 - TERRAFORM-TAGS-STRATEGY.md でタグ戦略を確認
 - 各モジュールのREADMEを参照
+---
 description:
 globs:
 alwaysApply: false

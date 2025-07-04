@@ -107,6 +107,10 @@ project_name = "myproject"
 environment  = "dev"
 aws_region   = "ap-northeast-1"
 
+# S3バケット設定
+create_bucket = true
+bucket_suffix = "data-dev"
+
 instance_type = "t3.micro"
 min_size     = 1
 max_size     = 3
@@ -116,6 +120,10 @@ desired_capacity = 1
 project_name = "myproject"
 environment  = "prod"
 aws_region   = "ap-northeast-1"
+
+# S3バケット設定
+create_bucket = true
+bucket_suffix = "data-prod"
 
 instance_type = "t3.medium"
 min_size     = 2
