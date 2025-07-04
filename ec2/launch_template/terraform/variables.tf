@@ -33,7 +33,7 @@ variable "app" {
 variable "ami_name_filter" {
   description = "AMI検索用の名前フィルター"
   type        = list(string)
-  default     = ["amzn2-ami-ecs-hvm-*-x86_64-ebs"]
+  default     = ["amzn2023-ami-ecs-*"]
 }
 
 # ==================================================
@@ -306,6 +306,15 @@ variable "parameter_store_kms_key_id" {
 # タグ設定
 # ==================================================
 
+variable "common_tags" {
+  description = "全リソースに適用する共通タグ"
+  type        = map(string)
+  default = {
+    Environment = var.env
+    Project     = var.project
+    ManagedBy   = "terraform"
+  }
+
 variable "owner_team" {
   description = "リソースの所有者チーム"
   type        = string
@@ -338,7 +347,6 @@ variable "data_classification" {
   validation {
     condition     = contains(["public", "internal", "confidential", "restricted"], var.data_classification)
     error_message = "data_classification は 'public', 'internal', 'confidential', 'restricted' のいずれかである必要があります。"
-  }
 }
 
 variable "backup_required" {
