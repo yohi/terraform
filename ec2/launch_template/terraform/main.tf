@@ -2,6 +2,12 @@
 # データソース
 # ==================================================
 
+# 現在のAWSアカウント情報取得
+data "aws_caller_identity" "current" {}
+
+# 現在のAWSリージョン取得
+data "aws_region" "current" {}
+
 # デフォルトVPCの取得
 data "aws_vpc" "default" {
   default = true
@@ -72,20 +78,87 @@ locals {
 
   # CloudWatch Agent設定のテンプレート化
   default_cloudwatch_config = var.create_default_cloudwatch_config && var.cloudwatch_agent_config_json == "" ? templatefile("${path.module}/../templates/monitoring/cloudwatch-agent.json.tpl", {
-    namespace                     = local.effective_cloudwatch_namespace
-    metrics_collection_interval   = var.cloudwatch_metrics_collection_interval
-    run_as_user                  = var.cloudwatch_run_as_user
-    cpu_metrics                  = jsonencode(var.cloudwatch_cpu_metrics)
-    disk_metrics                 = jsonencode(var.cloudwatch_disk_metrics)
-    disk_resources               = jsonencode(var.cloudwatch_disk_resources)
-    diskio_metrics               = jsonencode(var.cloudwatch_diskio_metrics)
-    mem_metrics                  = jsonencode(var.cloudwatch_mem_metrics)
-    enable_statsd                = var.cloudwatch_enable_statsd
-    statsd_port                  = var.cloudwatch_statsd_port
+    namespace                   = local.effective_cloudwatch_namespace
+    metrics_collection_interval = var.cloudwatch_metrics_collection_interval
+    run_as_user                 = var.cloudwatch_run_as_user
+    cpu_metrics                 = jsonencode(var.cloudwatch_cpu_metrics)
+    disk_metrics                = jsonencode(var.cloudwatch_disk_metrics)
+    disk_resources              = jsonencode(var.cloudwatch_disk_resources)
+    diskio_metrics              = jsonencode(var.cloudwatch_diskio_metrics)
+    mem_metrics                 = jsonencode(var.cloudwatch_mem_metrics)
+    enable_statsd               = var.cloudwatch_enable_statsd
+    statsd_port                 = var.cloudwatch_statsd_port
   }) : var.cloudwatch_agent_config_json
 
   # Parameter Storeに保存する最終的なCloudWatch設定
   final_cloudwatch_config = local.default_cloudwatch_config != "" ? local.default_cloudwatch_config : var.cloudwatch_agent_config_json
+}
+
+# ==================================================
+# ローカル変数（タグ戦略）
+# ==================================================
+
+locals {
+  # 基本タグ（すべてのリソースに適用）
+  base_tags = {
+    "ManagedBy"          = "terraform"
+    "TerraformWorkspace" = terraform.workspace
+    "Project"            = var.project
+    "Environment"        = var.env
+    "Application"        = var.app
+    "CreatedAt"          = formatdate("YYYY-MM-DD", timestamp())
+    "CreatedBy"          = data.aws_caller_identity.current.user_id
+    "AccountId"          = data.aws_caller_identity.current.account_id
+    "Region"             = data.aws_region.current.name
+  }
+
+  # 運用管理タグ
+  operational_tags = {
+    "Owner"           = var.owner_team
+    "OwnerEmail"      = var.owner_email
+    "CostCenter"      = var.cost_center
+    "BillingCode"     = var.billing_code != "" ? var.billing_code : "PROJ-2024-${var.project}"
+    "Schedule"        = var.schedule
+    "BackupRequired"  = var.backup_required ? "yes" : "no"
+    "MonitoringLevel" = var.monitoring_level
+  }
+
+  # セキュリティ・コンプライアンス タグ
+  security_tags = {
+    "DataClassification" = var.data_classification
+    "Encryption"         = "required"
+    "NetworkAccess"      = "vpc-only"
+  }
+
+  # 環境固有タグ
+  env_tags = var.env == "prod" ? {
+    "CriticalityLevel" = "high"
+    "AuditRequired"    = "yes"
+    "RetentionPeriod"  = "7-years"
+    } : {
+    "CriticalityLevel" = "medium"
+    "AuditRequired"    = "no"
+    "RetentionPeriod"  = "1-year"
+  }
+
+  # サービス固有タグ
+  service_tags = {
+    "Service"      = "compute"
+    "Component"    = "launch-template"
+    "Tier"         = "application"
+    "InstanceType" = var.instance_type
+    "AMI"          = "amazon-linux-2023-ecs"
+  }
+
+  # 最終的な共通タグ（優先度: 共通タグ > 環境固有 > セキュリティ > 運用 > サービス > 基本）
+  final_common_tags = merge(
+    local.base_tags,
+    local.service_tags,
+    local.operational_tags,
+    local.security_tags,
+    local.env_tags,
+    var.common_tags
+  )
 }
 
 # ==================================================
@@ -143,9 +216,11 @@ resource "aws_security_group" "main" {
   }
 
   tags = merge(
-    var.common_tags,
+    local.final_common_tags,
     {
-      Name = "${var.project}-${var.env}-ec2-sg"
+      Name      = "${var.project}-${var.env}-ec2-sg"
+      Component = "security-group"
+      Purpose   = "ec2-access-control"
     }
   )
 }
@@ -204,21 +279,21 @@ resource "aws_launch_template" "main" {
   # ユーザーデータ
   user_data = base64encode(templatefile("${path.module}/../templates/scripts/user_data.sh", {
     aws_region                = var.aws_region
-    ecs_cluster_name         = var.ecs_cluster_name != "" ? var.ecs_cluster_name : "${var.project}-${var.env}-ecs"
-    ecs_app_type             = var.app != "" ? upper(var.app) : ""
-    cloudwatch_agent_config  = var.cloudwatch_agent_config != "" ? var.cloudwatch_agent_config : "/${var.project}/${var.env}/config/cloudwatch/agent"
-    mackerel_api_key         = local.effective_mackerel_api_key
+    ecs_cluster_name          = var.ecs_cluster_name != "" ? var.ecs_cluster_name : "${var.project}-${var.env}-ecs"
+    ecs_app_type              = var.app != "" ? upper(var.app) : ""
+    cloudwatch_agent_config   = var.cloudwatch_agent_config != "" ? var.cloudwatch_agent_config : "/${var.project}/${var.env}/config/cloudwatch/agent"
+    mackerel_api_key          = local.effective_mackerel_api_key
     mackerel_parameter_prefix = var.mackerel_parameter_prefix != "" ? var.mackerel_parameter_prefix : "/${var.project}/${var.env}/config/mackerel/"
-    mackerel_auto_retirement = var.mackerel_auto_retirement
-    ctop_version             = var.ctop_version
-    custom_user_data         = var.custom_user_data
+    mackerel_auto_retirement  = var.mackerel_auto_retirement
+    ctop_version              = var.ctop_version
+    custom_user_data          = var.custom_user_data
   }))
 
   # インスタンスタグ設定
   tag_specifications {
     resource_type = "instance"
     tags = merge(
-      var.common_tags,
+      local.final_common_tags,
       {
         Name = var.app != "" ? "${var.project}-${var.env}-${var.app}-ec2" : "${var.project}-${var.env}-ec2"
       }
@@ -229,9 +304,11 @@ resource "aws_launch_template" "main" {
   tag_specifications {
     resource_type = "volume"
     tags = merge(
-      var.common_tags,
+      local.final_common_tags,
       {
-        Name = var.app != "" ? "${var.project}-${var.env}-${var.app}-volume" : "${var.project}-${var.env}-volume"
+        Name      = var.app != "" ? "${var.project}-${var.env}-${var.app}-volume" : "${var.project}-${var.env}-volume"
+        Component = "ebs-volume"
+        Purpose   = "root-storage"
       }
     )
   }
@@ -240,17 +317,21 @@ resource "aws_launch_template" "main" {
   tag_specifications {
     resource_type = "network-interface"
     tags = merge(
-      var.common_tags,
+      local.final_common_tags,
       {
-        Name = var.app != "" ? "${var.project}-${var.env}-${var.app}-eni" : "${var.project}-${var.env}-eni"
+        Name      = var.app != "" ? "${var.project}-${var.env}-${var.app}-eni" : "${var.project}-${var.env}-eni"
+        Component = "network-interface"
+        Purpose   = "ec2-network"
       }
     )
   }
 
   tags = merge(
-    var.common_tags,
+    local.final_common_tags,
     {
-      Name = var.app != "" ? "${var.project}-${var.env}-${var.app}-tpl" : "${var.project}-${var.env}-tpl"
+      Name      = var.app != "" ? "${var.project}-${var.env}-${var.app}-tpl" : "${var.project}-${var.env}-tpl"
+      Component = "launch-template"
+      Purpose   = "ec2-instance-template"
     }
   )
 
@@ -274,9 +355,12 @@ resource "aws_ssm_parameter" "mackerel_api_key" {
   key_id = var.parameter_store_kms_key_id != "" ? var.parameter_store_kms_key_id : null
 
   tags = merge(
-    var.common_tags,
+    local.final_common_tags,
     {
-      Name = "mackerel-api-key"
+      Name      = "mackerel-api-key"
+      Component = "parameter-store"
+      Purpose   = "mackerel-configuration"
+      Sensitive = "yes"
     }
   )
 }
@@ -290,9 +374,11 @@ resource "aws_ssm_parameter" "mackerel_display_name" {
   value = local.effective_mackerel_display_name
 
   tags = merge(
-    var.common_tags,
+    local.final_common_tags,
     {
-      Name = "mackerel-display-name"
+      Name      = "mackerel-display-name"
+      Component = "parameter-store"
+      Purpose   = "mackerel-configuration"
     }
   )
 }
@@ -306,9 +392,11 @@ resource "aws_ssm_parameter" "mackerel_organization" {
   value = var.mackerel_organization
 
   tags = merge(
-    var.common_tags,
+    local.final_common_tags,
     {
-      Name = "mackerel-organization"
+      Name      = "mackerel-organization"
+      Component = "parameter-store"
+      Purpose   = "mackerel-configuration"
     }
   )
 }
@@ -322,9 +410,11 @@ resource "aws_ssm_parameter" "mackerel_roles" {
   value = local.effective_mackerel_roles
 
   tags = merge(
-    var.common_tags,
+    local.final_common_tags,
     {
-      Name = "mackerel-roles"
+      Name      = "mackerel-roles"
+      Component = "parameter-store"
+      Purpose   = "mackerel-configuration"
     }
   )
 }
@@ -338,9 +428,11 @@ resource "aws_ssm_parameter" "mackerel_auto_retirement" {
   value = var.mackerel_auto_retirement
 
   tags = merge(
-    var.common_tags,
+    local.final_common_tags,
     {
-      Name = "mackerel-auto-retirement"
+      Name      = "mackerel-auto-retirement"
+      Component = "parameter-store"
+      Purpose   = "mackerel-configuration"
     }
   )
 }
@@ -354,9 +446,11 @@ resource "aws_ssm_parameter" "mackerel_agent_config" {
   value = local.final_mackerel_config
 
   tags = merge(
-    var.common_tags,
+    local.final_common_tags,
     {
-      Name = "mackerel-agent-config"
+      Name      = "mackerel-agent-config"
+      Component = "parameter-store"
+      Purpose   = "mackerel-configuration"
     }
   )
 }
@@ -370,9 +464,11 @@ resource "aws_ssm_parameter" "mackerel_sysconfig_config" {
   value = local.final_mackerel_sysconfig
 
   tags = merge(
-    var.common_tags,
+    local.final_common_tags,
     {
-      Name = "mackerel-sysconfig"
+      Name      = "mackerel-sysconfig"
+      Component = "parameter-store"
+      Purpose   = "mackerel-configuration"
     }
   )
 }
@@ -386,9 +482,11 @@ resource "aws_ssm_parameter" "cloudwatch_agent_config" {
   value = local.final_cloudwatch_config
 
   tags = merge(
-    var.common_tags,
+    local.final_common_tags,
     {
-      Name = "cloudwatch-agent-config"
+      Name      = "cloudwatch-agent-config"
+      Component = "parameter-store"
+      Purpose   = "cloudwatch-configuration"
     }
   )
 }

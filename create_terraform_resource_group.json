@@ -1,0 +1,22 @@
+{
+  "Name": "terraform-managed-resources",
+  "Description": "Terraformで管理されているすべてのリソース",
+  "ResourceQuery": {
+    "Type": "TAG_FILTERS_1_0",
+    "Query": {
+      "ResourceTypeFilters": [
+        "AWS::AllSupported"
+      ],
+      "TagFilters": [
+        {
+          "Key": "ManagedBy",
+          "Values": ["terraform"]
+        }
+      ]
+    }
+  },
+  "Tags": {
+    "Purpose": "terraform-resource-management",
+    "CreatedBy": "automation"
+  }
+}

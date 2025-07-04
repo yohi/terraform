@@ -1,0 +1,281 @@
+# ==================================================
+# プロジェクト基本設定
+# ==================================================
+
+# AWSリージョン
+aws_region = "ap-northeast-1"
+
+# プロジェクト名
+project = "my-webapp"
+
+# 環境名（dev, stg, prodなど）
+env = "prod"
+
+# アプリケーション名（オプション）
+app = "frontend"
+
+# ==================================================
+# 起動テンプレート設定
+# ==================================================
+
+# 使用する起動テンプレートのID（必須）
+# 例: "lt-0123456789abcdef0"
+launch_template_id = "REPLACE_WITH_YOUR_LAUNCH_TEMPLATE_ID"
+
+# 起動テンプレートのバージョン
+launch_template_version = "$Latest"
+
+# ==================================================
+# ネットワーク設定
+# ==================================================
+
+# サブネットIDのリスト（オプション：空の場合はデフォルトVPCのサブネットを使用）
+# 本番環境では明示的に指定することを推奨
+subnet_ids = [
+  # "subnet-12345678",
+  # "subnet-87654321",
+  # "subnet-abcdef12"
+]
+
+# アベイラビリティーゾーンのリスト（オプション：空の場合は利用可能なすべてのAZを使用）
+# 高可用性が必要な場合は複数AZを指定
+availability_zones = [
+  # "ap-northeast-1a",
+  # "ap-northeast-1c",
+  # "ap-northeast-1d"
+]
+
+# ==================================================
+# オートスケーリンググループ基本設定
+# ==================================================
+
+# インスタンス数設定
+# 本番環境では最小2インスタンス以上を推奨
+min_size = 2
+
+# 希望インスタンス数（最大インスタンス数は希望インスタンス数の2倍に自動設定されます）
+desired_capacity = 4
+
+# ヘルスチェック設定
+# ALB/NLBを使用する場合は "ELB" を選択
+health_check_type = "ELB"
+health_check_grace_period = 300
+
+# その他の設定
+protect_from_scale_in = false
+default_cooldown = 300
+max_instance_lifetime = 0  # 0 = 制限なし（秒単位）
+
+# 終了ポリシー
+termination_policies = ["OldestLaunchTemplate", "Default"]
+
+# ==================================================
+# ロードバランサー設定（必要に応じて設定）
+# ==================================================
+
+# ALB/NLBのターゲットグループARN
+# 本番環境では通常設定が必要
+target_group_arns = [
+  # "arn:aws:elasticloadbalancing:ap-northeast-1:123456789012:targetgroup/my-app-tg/1234567890123456"
+]
+
+# クラシックロードバランサー名（レガシー環境用）
+# load_balancer_names = ["my-classic-lb"]
+
+# ==================================================
+# 通知設定
+# ==================================================
+
+# 通知を有効にするかどうか
+enable_notifications = true
+
+# 通知先メールアドレス
+notification_email_addresses = [
+  "devops@example.com",
+  "sre@example.com"
+]
+
+# SNSトピック暗号化用のKMS key ID（セキュリティ強化）
+# 本番環境では設定を推奨
+sns_kms_key_id = "alias/sns-encryption-key"
+
+# 通知タイプ（必要に応じて追加・削除）
+notification_types = [
+  "autoscaling:EC2_INSTANCE_LAUNCH",
+  "autoscaling:EC2_INSTANCE_LAUNCH_ERROR",
+  "autoscaling:EC2_INSTANCE_TERMINATE",
+  "autoscaling:EC2_INSTANCE_TERMINATE_ERROR"
+]
+
+# ==================================================
+# メトリクス設定
+# ==================================================
+
+# 有効にするメトリクス
+enabled_metrics = [
+  "GroupMinSize",
+  "GroupMaxSize",
+  "GroupDesiredCapacity",
+  "GroupInServiceInstances",
+  "GroupTotalInstances",
+  "GroupPendingInstances",
+  "GroupStandbyInstances",
+  "GroupTerminatingInstances"
+]
+
+# ==================================================
+# インスタンスリフレッシュ設定
+# ==================================================
+
+# インスタンスリフレッシュを有効にするかどうか
+enable_instance_refresh = true
+
+# リフレッシュ設定
+instance_refresh_strategy = "Rolling"
+instance_refresh_min_healthy_percentage = 90
+instance_refresh_instance_warmup = 300
+instance_refresh_checkpoint_delay = 3600
+instance_refresh_checkpoint_percentages = [20, 50, 100]
+
+# ==================================================
+# CPU監視アラーム設定
+# ==================================================
+
+# CPU使用率高アラーム
+enable_cpu_high_alarm = true
+cpu_high_threshold = 80
+cpu_high_evaluation_periods = 2
+cpu_high_period = 300
+
+# CPU使用率低アラーム
+enable_cpu_low_alarm = true
+cpu_low_threshold = 10
+cpu_low_evaluation_periods = 3
+cpu_low_period = 300
+
+# ==================================================
+# スケーリングポリシー設定
+# ==================================================
+
+# スケールアップポリシー
+enable_scale_up_policy = true
+scale_up_adjustment = 2  # 一度に追加するインスタンス数
+scale_up_adjustment_type = "ChangeInCapacity"
+scale_up_cooldown = 300
+scale_up_policy_type = "SimpleScaling"
+
+# スケールダウンポリシー
+enable_scale_down_policy = true
+scale_down_adjustment = -1  # 一度に削除するインスタンス数
+scale_down_adjustment_type = "ChangeInCapacity"
+scale_down_cooldown = 300
+scale_down_policy_type = "SimpleScaling"
+
+# ==================================================
+# ターゲット追跡スケーリング設定（高度なスケーリング）
+# ==================================================
+
+# ターゲット追跡スケーリングを使用する場合
+# scale_up_policy_type = "TargetTrackingScaling"
+# target_tracking_target_value = 60.0
+# target_tracking_metric_type = "ASGAverageCPUUtilization"
+# target_tracking_scale_out_cooldown = 300
+# target_tracking_scale_in_cooldown = 300
+
+# ==================================================
+# スケーリングアラーム設定
+# ==================================================
+
+# スケールアップアラーム
+enable_scale_up_alarm = true
+scale_up_alarm_threshold = 70
+scale_up_alarm_evaluation_periods = 2
+scale_up_alarm_period = 300
+
+# スケールダウンアラーム
+enable_scale_down_alarm = true
+scale_down_alarm_threshold = 20
+scale_down_alarm_evaluation_periods = 3
+scale_down_alarm_period = 300
+
+# ==================================================
+# 運用管理タグ設定（重要：適切に設定してください）
+# ==================================================
+
+# チーム情報
+owner_team = "DevOps"
+owner_email = "devops@example.com"
+
+# コスト管理
+cost_center = "engineering"
+billing_code = "PROJ-2024-webapp"
+
+# データ分類とセキュリティ
+data_classification = "internal"  # public, internal, confidential, restricted
+backup_required = true
+monitoring_level = "detailed"     # basic, detailed, custom
+
+# 運用スケジュール
+schedule = "24x7"  # 24x7, business-hours, custom
+
+# ==================================================
+# 共通タグ設定
+# ==================================================
+
+# 共通タグ（すべてのリソースに適用）
+common_tags = {
+  Environment = "prod"
+  Service     = "frontend"
+  Team        = "DevOps"
+  CostCenter  = "engineering"
+  CriticalityLevel = "high"
+  ComplianceScope = "pci"
+}
+
+# 追加タグ（インスタンスにプロパゲートするかどうかを指定）
+additional_tags = {
+  "Name" = {
+    value = "my-webapp-prod-frontend"
+    propagate_at_launch = true
+  }
+  "Backup" = {
+    value = "daily"
+    propagate_at_launch = true
+  }
+  "Monitoring" = {
+    value = "enabled"
+    propagate_at_launch = true
+  }
+  "MaintenanceWindow" = {
+    value = "sun-03:00-06:00"
+    propagate_at_launch = true
+  }
+}
+
+# ==================================================
+# 開発環境での設定例（コスト最適化）
+# ==================================================
+
+# 開発環境用の設定（コメントアウト）
+# env = "dev"
+# min_size = 0  # 夜間停止可能
+# desired_capacity = 1
+# health_check_grace_period = 300
+# monitoring_level = "basic"
+# schedule = "business-hours"
+# data_classification = "internal"
+# backup_required = false
+
+# ==================================================
+# 高可用性構成での設定例（ミッションクリティカル）
+# ==================================================
+
+# 高可用性構成用の設定（コメントアウト）
+# min_size = 4
+# desired_capacity = 6
+# health_check_grace_period = 600
+# protect_from_scale_in = true
+# monitoring_level = "detailed"
+# data_classification = "confidential"
+# backup_required = true
+# cpu_high_threshold = 70  # より敏感な設定
