@@ -54,6 +54,23 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+# 機密情報の変数定義例
+variable "sensitive_value" {
+  description = "Sensitive configuration value"
+  type        = string
+  sensitive   = true
+}
+
+variable "database_password" {
+  description = "Database password"
+  type        = string
+  sensitive   = true
+  validation {
+    condition     = length(var.database_password) >= 8
+    error_message = "Password must be at least 8 characters long."
+  }
+}
 ```
 
 ### 基本的なoutputs.tf構造
@@ -344,8 +361,34 @@ resource "aws_ecs_task_definition" "this" {
 
 ## データベース関連テンプレート
 
-### RDS Instance
+### RDS Instance（AWS Secrets Manager使用 - 推奨）
 ```hcl
+# シークレットの作成
+resource "aws_secretsmanager_secret" "db_password" {
+  name                    = "${local.name_prefix}-db-password"
+  description             = "Database password for ${local.name_prefix}"
+  recovery_window_in_days = 7
+
+  tags = local.common_tags
+}
+
+resource "aws_secretsmanager_secret_version" "db_password" {
+  secret_id = aws_secretsmanager_secret.db_password.id
+  secret_string = jsonencode({
+    username = var.db_username
+    password = var.db_password
+  })
+}
+
+# シークレットの取得
+data "aws_secretsmanager_secret_version" "db_password" {
+  secret_id = aws_secretsmanager_secret.db_password.id
+}
+
+locals {
+  db_credentials = jsondecode(data.aws_secretsmanager_secret_version.db_password.secret_string)
+}
+
 resource "aws_db_instance" "this" {
   identifier             = "${local.name_prefix}-db"
   engine                 = var.db_engine
@@ -356,8 +399,8 @@ resource "aws_db_instance" "this" {
   storage_encrypted      = true
 
   db_name  = var.db_name
-  username = var.db_username
-  password = var.db_password
+  username = local.db_credentials.username
+  password = local.db_credentials.password
 
   vpc_security_group_ids = [aws_security_group.db.id]
   db_subnet_group_name   = aws_db_subnet_group.this.name
@@ -378,6 +421,164 @@ resource "aws_db_subnet_group" "this" {
 
   tags = merge(local.common_tags, {
     Name = "${local.name_prefix}-db-subnet-group"
+  })
+}
+```
+
+### RDS Instance（Random Password使用 - 推奨）
+```hcl
+# ランダムパスワードの生成
+resource "random_password" "db_password" {
+  length  = 16
+  special = true
+}
+
+# シークレットの作成
+resource "aws_secretsmanager_secret" "db_password" {
+  name                    = "${local.name_prefix}-db-password"
+  description             = "Database password for ${local.name_prefix}"
+  recovery_window_in_days = 7
+
+  tags = local.common_tags
+}
+
+resource "aws_secretsmanager_secret_version" "db_password" {
+  secret_id = aws_secretsmanager_secret.db_password.id
+  secret_string = jsonencode({
+    username = var.db_username
+    password = random_password.db_password.result
+  })
+}
+
+resource "aws_db_instance" "this" {
+  identifier             = "${local.name_prefix}-db"
+  engine                 = var.db_engine
+  engine_version         = var.db_engine_version
+  instance_class         = var.db_instance_class
+  allocated_storage      = var.db_allocated_storage
+  storage_type           = "gp3"
+  storage_encrypted      = true
+
+  db_name  = var.db_name
+  username = var.db_username
+  password = random_password.db_password.result
+
+  vpc_security_group_ids = [aws_security_group.db.id]
+  db_subnet_group_name   = aws_db_subnet_group.this.name
+
+  backup_retention_period = var.backup_retention_period
+  backup_window          = var.backup_window
+  maintenance_window     = var.maintenance_window
+
+  skip_final_snapshot = var.skip_final_snapshot
+  deletion_protection = var.deletion_protection
+
+  tags = local.common_tags
+}
+
+resource "aws_db_subnet_group" "this" {
+  name       = "${local.name_prefix}-db-subnet-group"
+  subnet_ids = var.db_subnet_ids
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-db-subnet-group"
+  })
+}
+```
+
+### RDS Instance（Sensitive Variable使用 - 基本的な方法）
+```hcl
+resource "aws_db_instance" "this" {
+  identifier             = "${local.name_prefix}-db"
+  engine                 = var.db_engine
+  engine_version         = var.db_engine_version
+  instance_class         = var.db_instance_class
+  allocated_storage      = var.db_allocated_storage
+  storage_type           = "gp3"
+  storage_encrypted      = true
+
+  db_name  = var.db_name
+  username = var.db_username
+  password = var.db_password # この場合、variables.tfでsensitive = trueを設定
+
+  vpc_security_group_ids = [aws_security_group.db.id]
+  db_subnet_group_name   = aws_db_subnet_group.this.name
+
+  backup_retention_period = var.backup_retention_period
+  backup_window          = var.backup_window
+  maintenance_window     = var.maintenance_window
+
+  skip_final_snapshot = var.skip_final_snapshot
+  deletion_protection = var.deletion_protection
+
+  tags = local.common_tags
+}
+
+resource "aws_db_subnet_group" "this" {
+  name       = "${local.name_prefix}-db-subnet-group"
+  subnet_ids = var.db_subnet_ids
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-db-subnet-group"
+  })
+}
+```
+
+### データベース関連の安全な変数定義
+```hcl
+# variables.tfでの安全な変数定義例
+variable "db_username" {
+  description = "Database username"
+  type        = string
+  sensitive   = true
+}
+
+variable "db_password" {
+  description = "Database password"
+  type        = string
+  sensitive   = true
+  validation {
+    condition     = length(var.db_password) >= 8
+    error_message = "Password must be at least 8 characters long."
+  }
+}
+
+# データベース用のIAMロール（Secrets Manager使用時）
+resource "aws_iam_role" "db_secrets_role" {
+  name = "${local.name_prefix}-db-secrets-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "rds.amazonaws.com"
+        }
+      }
+    ]
+  })
+
+  tags = local.common_tags
+}
+
+resource "aws_iam_role_policy" "db_secrets_policy" {
+  name = "${local.name_prefix}-db-secrets-policy"
+  role = aws_iam_role.db_secrets_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:DescribeSecret"
+        ]
+        Resource = aws_secretsmanager_secret.db_password.arn
+      }
+    ]
   })
 }
 ```
@@ -443,6 +644,95 @@ resource "aws_iam_role" "ecs_execution_role" {
 resource "aws_iam_role_policy_attachment" "ecs_execution_role_policy" {
   role       = aws_iam_role.ecs_execution_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+}
+```
+
+## セキュリティベストプラクティス
+
+### 機密情報の取り扱い
+
+#### 1. AWS Secrets Manager使用（推奨）
+```hcl
+# 機密情報は必ずSecrets Managerに保存
+resource "aws_secretsmanager_secret" "app_secrets" {
+  name                    = "${local.name_prefix}-app-secrets"
+  description             = "Application secrets"
+  recovery_window_in_days = 7
+
+  tags = local.common_tags
+}
+
+# アプリケーションでの使用例
+resource "aws_ecs_task_definition" "app" {
+  # ... other configuration
+
+  container_definitions = jsonencode([
+    {
+      name = "app"
+      # ... other configuration
+
+      secrets = [
+        {
+          name      = "DB_PASSWORD"
+          valueFrom = aws_secretsmanager_secret.app_secrets.arn
+        }
+      ]
+    }
+  ])
+}
+```
+
+#### 2. ランダムパスワード生成
+```hcl
+resource "random_password" "password" {
+  length  = 16
+  special = true
+}
+
+# 即座にSecrets Managerに保存
+resource "aws_secretsmanager_secret_version" "password" {
+  secret_id     = aws_secretsmanager_secret.password.id
+  secret_string = random_password.password.result
+}
+```
+
+#### 3. 変数のsensitiveフラグ
+```hcl
+variable "api_key" {
+  description = "API key for external service"
+  type        = string
+  sensitive   = true
+}
+
+# 出力でも必要に応じてsensitiveフラグを設定
+output "api_endpoint" {
+  description = "API endpoint URL"
+  value       = aws_api_gateway_deployment.api.invoke_url
+  sensitive   = true
+}
+```
+
+#### 4. IAM権限の最小化
+```hcl
+# 必要最小限の権限のみを付与
+resource "aws_iam_role_policy" "app_secrets_access" {
+  name = "${local.name_prefix}-secrets-access"
+  role = aws_iam_role.app_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:GetSecretValue"
+        ]
+        Resource = [
+          aws_secretsmanager_secret.app_secrets.arn
+        ]
+      }
+    ]
+  })
 }
 ```
 
