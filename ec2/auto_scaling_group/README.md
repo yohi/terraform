@@ -145,111 +145,293 @@ module "auto_scaling_group" {
   launch_template_id = "lt-0123456789abcdef0"
 
   # スケーリング設定
-  # 最小インスタンス数: 0（スケールダウンが可能）
-  # 希望インスタンス数: 4
-  # 最大インスタンス数: 8（desired_capacityの2倍）
-  min_size = 0
-  desired_capacity = 4
+  min_size         = 2  # 本番環境では最小2インスタンス
+  desired_capacity = 4  # 通常時は4インスタンス
+
+  # ALBとの統合
+  target_group_arns = [
+    "arn:aws:elasticloadbalancing:ap-northeast-1:123456789012:targetgroup/my-app-tg/1234567890123456"
+  ]
+  health_check_type = "ELB"
 
   # 通知設定
   enable_notifications = true
   notification_email_addresses = [
-    "devops@company.com",
-    "alerts@company.com"
+    "devops@company.com"
   ]
 
-  # タグ設定
+  # 運用管理タグ
+  owner_team    = "DevOps"
+  owner_email   = "devops@company.com"
+  cost_center   = "engineering"
+  billing_code  = "PROJ-2024-webapp"
+
+  # 共通タグ
   common_tags = {
     Environment = "prod"
-    Project     = "my-webapp"
-    Owner       = "DevOps Team"
+    Service     = "frontend"
+    CriticalityLevel = "high"
   }
 }
 ```
 
-### ALBとの統合例
+### 開発環境での使用例
 
 ```hcl
-module "auto_scaling_group" {
+module "auto_scaling_group_dev" {
   source = "./ec2/auto_scaling_group/terraform"
 
   # 基本設定
   project = "my-webapp"
-  env     = "prod"
+  env     = "dev"
+  app     = "api"
 
   # 起動テンプレート
-  launch_template_id = "lt-0123456789abcdef0"
+  launch_template_id = "lt-0987654321fedcba0"
 
-  # ALBターゲットグループ
-  target_group_arns = [
-    "arn:aws:elasticloadbalancing:ap-northeast-1:123456789012:targetgroup/my-app-tg/1234567890123456"
+  # 開発環境では費用を抑えた設定
+  min_size         = 0  # 夜間は完全停止可能
+  desired_capacity = 1  # 通常は1インスタンス
+
+  # スケジュール設定（業務時間のみ）
+  schedule = "business-hours"
+
+  # 簡易監視
+  monitoring_level = "basic"
+
+  # 通知は開発チームのみ
+  enable_notifications = true
+  notification_email_addresses = [
+    "dev-team@company.com"
   ]
 
-  # ヘルスチェック（ALB使用時）
+  # 運用管理タグ
+  owner_team   = "Development"
+  owner_email  = "dev-team@company.com"
+  cost_center  = "engineering"
+
+  common_tags = {
+    Environment = "dev"
+    Service     = "api"
+    CriticalityLevel = "low"
+  }
+}
+```
+
+### 高可用性構成の例
+
+```hcl
+module "auto_scaling_group_ha" {
+  source = "./ec2/auto_scaling_group/terraform"
+
+  # 基本設定
+  project = "mission-critical"
+  env     = "prod"
+  app     = "core"
+
+  # 起動テンプレート
+  launch_template_id = "lt-0abcdef123456789"
+
+  # 高可用性設定
+  min_size         = 4  # 最小4インスタンス
+  desired_capacity = 6  # 通常は6インスタンス
+
+  # 複数AZにまたがる配置
+  availability_zones = [
+    "ap-northeast-1a",
+    "ap-northeast-1c",
+    "ap-northeast-1d"
+  ]
+
+  # 厳格なヘルスチェック
   health_check_type = "ELB"
-  health_check_grace_period = 300
+  health_check_grace_period = 600
+
+  # インスタンス保護
+  protect_from_scale_in = true
+
+  # 詳細監視
+  monitoring_level = "detailed"
+
+  # 機密データの取り扱い
+  data_classification = "confidential"
+  backup_required = true
+
+  # アラーム設定
+  enable_cpu_high_alarm = true
+  cpu_high_threshold = 70  # より低い閾値
+
+  # 通知設定（複数チーム）
+  enable_notifications = true
+  notification_email_addresses = [
+    "sre@company.com",
+    "devops@company.com",
+    "oncall@company.com"
+  ]
+
+  # 運用管理タグ
+  owner_team   = "SRE"
+  owner_email  = "sre@company.com"
+  cost_center  = "production"
+  billing_code = "CRIT-2024-core"
+
+  common_tags = {
+    Environment = "prod"
+    Service     = "core"
+    CriticalityLevel = "critical"
+    ComplianceScope = "pci"
+  }
 }
 ```
 
 ### ターゲット追跡スケーリング例
 
 ```hcl
-module "auto_scaling_group" {
+module "auto_scaling_group_target_tracking" {
   source = "./ec2/auto_scaling_group/terraform"
 
   # 基本設定
-  project = "my-webapp"
+  project = "analytics"
   env     = "prod"
 
   # 起動テンプレート
   launch_template_id = "lt-0123456789abcdef0"
+
+  # スケーリング設定
+  min_size         = 2
+  desired_capacity = 4
 
   # ターゲット追跡スケーリング
   enable_scale_up_policy = true
-  scale_up_policy_type   = "TargetTrackingScaling"
-  target_tracking_target_value = 50.0
-  target_tracking_metric_type  = "ASGAverageCPUUtilization"
-}
-```
+  scale_up_policy_type = "TargetTrackingScaling"
+  target_tracking_target_value = 60.0  # CPU使用率60%を目標
+  target_tracking_metric_type = "ASGAverageCPUUtilization"
+  target_tracking_scale_out_cooldown = 300
+  target_tracking_scale_in_cooldown = 300
 
-### カスタムサブネット指定例
-
-```hcl
-module "auto_scaling_group" {
-  source = "./ec2/auto_scaling_group/terraform"
-
-  # 基本設定
-  project = "my-webapp"
-  env     = "prod"
-
-  # 起動テンプレート
-  launch_template_id = "lt-0123456789abcdef0"
-
-  # カスタムサブネット指定
-  subnet_ids = [
-    "subnet-12345678",
-    "subnet-87654321",
-    "subnet-abcdef12"
+  # 通知設定
+  enable_notifications = true
+  notification_email_addresses = [
+    "analytics-team@company.com"
   ]
 
-  # タグ設定
+  # 運用管理タグ
+  owner_team   = "Analytics"
+  owner_email  = "analytics-team@company.com"
+  cost_center  = "data-engineering"
+
   common_tags = {
     Environment = "prod"
-    Project     = "my-webapp"
-    Owner       = "DevOps Team"
-  }
-
-  # 追加タグ（インスタンスにプロパゲート）
-  additional_tags = {
-    "Backup" = {
-      propagate_at_launch = true
-    }
-    "Monitoring" = {
-      propagate_at_launch = true
-    }
+    Service     = "analytics"
+    WorkloadType = "batch"
   }
 }
 ```
+
+## 💡 設定のベストプラクティス
+
+### 1. 環境別設定の推奨値
+
+| 項目 | 開発環境 | ステージング環境 | 本番環境 |
+|------|----------|------------------|----------|
+| `min_size` | 0 | 1 | 2以上 |
+| `desired_capacity` | 1 | 2 | 4以上 |
+| `health_check_grace_period` | 300 | 300 | 600 |
+| `monitoring_level` | basic | detailed | detailed |
+| `backup_required` | false | true | true |
+
+### 2. セキュリティ設定
+
+```hcl
+# 機密データを扱う場合
+data_classification = "confidential"
+backup_required = true
+
+# SNS暗号化
+sns_kms_key_id = "alias/sns-encryption-key"
+
+# 詳細監視
+monitoring_level = "detailed"
+```
+
+### 3. コスト最適化
+
+```hcl
+# 開発環境でのコスト削減
+min_size = 0  # 夜間停止可能
+schedule = "business-hours"
+
+# スケジュール設定での自動停止
+# 別途Lambda関数やEventBridgeと組み合わせて使用
+```
+
+## 📊 監視とアラート
+
+このモジュールでは以下の監視項目が自動で設定されます：
+
+- **CPU使用率アラーム**: 高使用率・低使用率の検知
+- **スケーリングイベント**: インスタンス起動・停止の通知
+- **ヘルスチェック**: インスタンス健全性の監視
+- **CloudWatch メトリクス**: 詳細な使用状況の記録
+
+### アラート設定例
+
+```hcl
+# CPU使用率アラーム
+enable_cpu_high_alarm = true
+cpu_high_threshold = 80
+cpu_high_evaluation_periods = 2
+
+# スケーリングアラーム
+enable_scale_up_alarm = true
+scale_up_alarm_threshold = 70
+```
+
+## 🛠️ トラブルシューティング
+
+### よくある問題と解決方法
+
+1. **インスタンスが起動しない**
+   - 起動テンプレートIDを確認
+   - IAM権限を確認
+   - サブネットの可用性を確認
+
+2. **スケーリングが動作しない**
+   - CloudWatch Alarmの状態を確認
+   - スケーリングポリシーの設定を確認
+   - クールダウン時間を確認
+
+3. **通知が届かない**
+   - SNS トピックの設定を確認
+   - Email サブスクリプションの確認待ち状態をチェック
+   - IAM権限を確認
+
+### デバッグ用コマンド
+
+```bash
+# Auto Scaling Group の状態確認
+aws autoscaling describe-auto-scaling-groups --auto-scaling-group-names "your-asg-name"
+
+# スケーリングアクティビティの確認
+aws autoscaling describe-scaling-activities --auto-scaling-group-name "your-asg-name"
+
+# CloudWatch Alarmの状態確認
+aws cloudwatch describe-alarms --alarm-names "your-alarm-name"
+```
+
+## 🔗 関連リソース
+
+- [AWS Auto Scaling ユーザーガイド](https://docs.aws.amazon.com/autoscaling/ec2/userguide/)
+- [Terraform AWS Provider ドキュメント](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
+- [プロジェクトのタグ戦略](../../TERRAFORM-TAGS-STRATEGY.md)
+
+## 📝 変更履歴
+
+| 日付 | バージョン | 変更内容 |
+|------|------------|----------|
+| 2024-12 | 1.0.0 | 初回リリース |
+| 2024-12 | 1.1.0 | ターゲット追跡スケーリング対応 |
+| 2024-12 | 1.2.0 | 詳細なタグ戦略対応 |
 
 ## 出力値
 
@@ -296,55 +478,6 @@ module "auto_scaling_group" {
 6. **AWS Autoscaling Notification** - ASG通知設定（オプション）
 
 合計: **最大10個のリソース**
-
-## トラブルシューティング
-
-### よくある問題
-
-1. **起動テンプレートが見つからない**
-   - `launch_template_id` が正しく設定されているか確認してください
-   - 起動テンプレートが同じリージョンに存在するか確認してください
-
-2. **インスタンスが起動しない**
-   - 起動テンプレートのセキュリティグループ設定を確認してください
-   - サブネットの設定を確認してください
-   - IAMロールの権限を確認してください
-
-3. **スケーリングが動作しない**
-   - CloudWatchアラームの設定を確認してください
-   - スケーリングポリシーが正しく設定されているか確認してください
-   - クールダウン時間の設定を確認してください
-
-4. **通知が届かない**
-   - SNSトピックのサブスクリプションが確認済みか確認してください
-   - メールアドレスが正しく設定されているか確認してください
-
-5. **タグが正しく適用されない**
-   - `common_tags`は全リソースに適用されます
-   - `additional_tags`はオートスケーリンググループのインスタンスにのみ適用されます
-   - `propagate_at_launch`の設定を確認してください
-
-### デバッグコマンド
-
-```bash
-# Terraformの構文チェック
-terraform validate
-
-# プランの詳細表示
-terraform plan -detailed-exitcode
-
-# 状態の確認
-terraform show
-
-# CloudWatchログの確認
-aws logs describe-log-groups --log-group-name-prefix "/aws/autoscaling"
-
-# Auto Scaling Groupの活動履歴
-aws autoscaling describe-scaling-activities --auto-scaling-group-name <ASG_NAME>
-
-# アラームの状態確認
-aws cloudwatch describe-alarms --alarm-names <ALARM_NAME>
-```
 
 ## セキュリティ考慮事項
 

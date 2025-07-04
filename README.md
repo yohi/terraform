@@ -23,10 +23,12 @@
 **最新の機能強化 (feature/ec2__auto_scaling_group ブランチ):**
 - 🔄 **インスタンスリフレッシュ機能** - Rolling更新による無停止デプロイ
 - 📊 **高度なスケーリングポリシー** - ターゲット追跡とステップスケーリング
-- 🏷️ **柔軟なタグ管理** - インスタンスレベルでのタグ制御
+- 🏷️ **統合タグ戦略** - 環境別・セキュリティ・運用管理タグの自動適用
 - 📉 **0台スケールダウン対応** - 完全なコスト最適化
-- 🔔 **包括的なアラーム設定** - CPU、メモリ、ネットワーク監視
-- 🔐 **セキュリティ強化** - KMS暗号化、IAM最小権限
+- 🔔 **包括的なアラーム設定** - 4種類のCloudWatchアラーム
+- 🔐 **セキュリティ強化** - SNS KMS暗号化、バリデーション機能
+- 🧪 **テスト自動化** - ワンクリックテストスクリプト付き
+- 📈 **運用支援** - トラブルシューティング情報とCLIコマンド例
 
 **主な機能：**
 - **スケーリングポリシー**:
@@ -151,7 +153,15 @@ cd ec2/auto_scaling_group/terraform
 cp terraform.tfvars.example terraform.tfvars
 vi terraform.tfvars  # 設定を編集
 
-# AWS確認付きデプロイメント（推奨）
+# 自動テストスクリプトを使用（推奨）
+cd ec2/auto_scaling_group
+./test_module.sh validate   # 設定検証
+./test_module.sh plan       # 実行計画
+./test_module.sh apply      # リソース作成
+./test_module.sh check      # 状態確認
+./test_module.sh destroy    # リソース削除
+
+# または従来の方法
 ./plan_with_confirmation.sh
 ./apply_with_confirmation.sh
 ```

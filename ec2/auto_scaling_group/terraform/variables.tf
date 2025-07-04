@@ -1,4 +1,22 @@
 # ==================================================
+# EC2 Auto Scaling Group Terraform Module - Variables
+# ==================================================
+#
+# このファイルは Auto Scaling Group モジュールの全変数を定義します
+#
+# 設定カテゴリ:
+# - プロジェクト基本設定
+# - 起動テンプレート設定
+# - ネットワーク設定
+# - スケーリング設定
+# - 監視・アラート設定
+# - 通知設定
+# - タグ設定
+#
+# 最新更新: 2024年12月
+# ==================================================
+
+# ==================================================
 # プロジェクト基本設定
 # ==================================================
 
@@ -6,24 +24,44 @@ variable "aws_region" {
   description = "AWSリージョン"
   type        = string
   default     = "ap-northeast-1"
+
+  validation {
+    condition     = can(regex("^[a-z]{2}-[a-z]+-[0-9]$", var.aws_region))
+    error_message = "aws_region は有効なAWSリージョン形式である必要があります（例: ap-northeast-1）。"
+  }
 }
 
 variable "project" {
   description = "プロジェクト名"
   type        = string
   default     = "myproject"
+
+  validation {
+    condition     = can(regex("^[a-z0-9-]+$", var.project)) && length(var.project) >= 2 && length(var.project) <= 32
+    error_message = "project は2-32文字の英小文字、数字、ハイフンのみ使用可能です。"
+  }
 }
 
 variable "env" {
   description = "環境名（dev, stg, prodなど）"
   type        = string
   default     = "dev"
+
+  validation {
+    condition     = contains(["dev", "stg", "test", "prod"], var.env)
+    error_message = "env は 'dev', 'stg', 'test', 'prod' のいずれかである必要があります。"
+  }
 }
 
 variable "app" {
   description = "アプリケーション名（空文字列の場合は省略される）"
   type        = string
   default     = ""
+
+  validation {
+    condition     = var.app == "" || (can(regex("^[a-z0-9-]+$", var.app)) && length(var.app) >= 2 && length(var.app) <= 32)
+    error_message = "app は空文字列または2-32文字の英小文字、数字、ハイフンのみ使用可能です。"
+  }
 }
 
 # ==================================================
@@ -33,12 +71,22 @@ variable "app" {
 variable "launch_template_id" {
   description = "使用する起動テンプレートのID"
   type        = string
+
+  validation {
+    condition     = can(regex("^lt-[0-9a-f]{8,17}$", var.launch_template_id))
+    error_message = "launch_template_id は有効な起動テンプレートID形式である必要があります（例: lt-0123456789abcdef0）。"
+  }
 }
 
 variable "launch_template_version" {
   description = "使用する起動テンプレートのバージョン（$Latest, $Default, または特定のバージョン番号）"
   type        = string
   default     = "$Latest"
+
+  validation {
+    condition     = var.launch_template_version == "$Latest" || var.launch_template_version == "$Default" || can(regex("^[0-9]+$", var.launch_template_version))
+    error_message = "launch_template_version は '$Latest', '$Default', または数値である必要があります。"
+  }
 }
 
 # ==================================================
@@ -49,12 +97,26 @@ variable "subnet_ids" {
   description = "オートスケーリンググループで使用するサブネットIDのリスト（空の場合はデフォルトVPCのサブネットを使用）"
   type        = list(string)
   default     = []
+
+  validation {
+    condition = alltrue([
+      for subnet_id in var.subnet_ids : can(regex("^subnet-[0-9a-f]{8,17}$", subnet_id))
+    ])
+    error_message = "subnet_ids の各要素は有効なサブネットID形式である必要があります（例: subnet-12345678）。"
+  }
 }
 
 variable "availability_zones" {
   description = "オートスケーリンググループで使用するアベイラビリティーゾーンのリスト（空の場合は利用可能なすべてのAZを使用）"
   type        = list(string)
   default     = []
+
+  validation {
+    condition = alltrue([
+      for az in var.availability_zones : can(regex("^[a-z]{2}-[a-z]+-[0-9][a-z]$", az))
+    ])
+    error_message = "availability_zones の各要素は有効なAZ形式である必要があります（例: ap-northeast-1a）。"
+  }
 }
 
 # ==================================================
@@ -65,12 +127,22 @@ variable "desired_capacity" {
   description = "オートスケーリンググループの希望インスタンス数（最大インスタンス数は2倍に設定される）"
   type        = number
   default     = 2
+
+  validation {
+    condition     = var.desired_capacity >= 1 && var.desired_capacity <= 1000
+    error_message = "desired_capacity は1から1000の間である必要があります。"
+  }
 }
 
 variable "min_size" {
   description = "オートスケーリンググループの最小インスタンス数（0に設定することで完全なスケールダウンが可能）"
   type        = number
   default     = 0
+
+  validation {
+    condition     = var.min_size >= 0 && var.min_size <= 1000
+    error_message = "min_size は0から1000の間である必要があります。"
+  }
 }
 
 variable "health_check_type" {
@@ -88,6 +160,11 @@ variable "health_check_grace_period" {
   description = "ヘルスチェック猶予期間（秒）"
   type        = number
   default     = 300
+
+  validation {
+    condition     = var.health_check_grace_period >= 0 && var.health_check_grace_period <= 7200
+    error_message = "health_check_grace_period は0から7200秒の間である必要があります。"
+  }
 }
 
 variable "protect_from_scale_in" {
@@ -100,18 +177,36 @@ variable "default_cooldown" {
   description = "デフォルトクールダウン時間（秒）"
   type        = number
   default     = 300
+
+  validation {
+    condition     = var.default_cooldown >= 0 && var.default_cooldown <= 3600
+    error_message = "default_cooldown は0から3600秒の間である必要があります。"
+  }
 }
 
 variable "max_instance_lifetime" {
   description = "インスタンスの最大寿命（秒）。0の場合は制限なし"
   type        = number
   default     = 0
+
+  validation {
+    condition     = var.max_instance_lifetime == 0 || (var.max_instance_lifetime >= 604800 && var.max_instance_lifetime <= 31536000)
+    error_message = "max_instance_lifetime は0（制限なし）または604800-31536000秒（7日-365日）の間である必要があります。"
+  }
 }
 
 variable "termination_policies" {
   description = "インスタンス終了ポリシー"
   type        = list(string)
   default     = ["Default"]
+
+  validation {
+    condition = alltrue([
+      for policy in var.termination_policies :
+      contains(["Default", "OldestInstance", "NewestInstance", "OldestLaunchConfiguration", "OldestLaunchTemplate", "ClosestToNextInstanceHour", "AllocationStrategy"], policy)
+    ])
+    error_message = "termination_policies の各要素は有効な終了ポリシーである必要があります。"
+  }
 }
 
 # ==================================================
@@ -122,12 +217,26 @@ variable "target_group_arns" {
   description = "ターゲットグループのARNリスト（ALB/NLB使用時）"
   type        = list(string)
   default     = []
+
+  validation {
+    condition = alltrue([
+      for arn in var.target_group_arns : can(regex("^arn:aws:elasticloadbalancing:[a-z0-9-]+:[0-9]+:targetgroup/.+$", arn))
+    ])
+    error_message = "target_group_arns の各要素は有効なターゲットグループARN形式である必要があります。"
+  }
 }
 
 variable "load_balancer_names" {
   description = "クラシックロードバランサー名のリスト（CLB使用時）"
   type        = list(string)
   default     = []
+
+  validation {
+    condition = alltrue([
+      for name in var.load_balancer_names : can(regex("^[a-zA-Z0-9-]+$", name)) && length(name) >= 1 && length(name) <= 32
+    ])
+    error_message = "load_balancer_names の各要素は1-32文字の英数字とハイフンのみ使用可能です。"
+  }
 }
 
 # ==================================================
@@ -144,12 +253,24 @@ variable "notification_email_addresses" {
   description = "通知先メールアドレスのリスト"
   type        = list(string)
   default     = []
+
+  validation {
+    condition = alltrue([
+      for email in var.notification_email_addresses : can(regex("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", email))
+    ])
+    error_message = "notification_email_addresses の各要素は有効なメールアドレス形式である必要があります。"
+  }
 }
 
 variable "sns_kms_key_id" {
   description = "SNSトピックの暗号化に使用するKMS key ID (ARN, key ID, または alias)"
   type        = string
   default     = null
+
+  validation {
+    condition     = var.sns_kms_key_id == null || can(regex("^(arn:aws:kms:[a-z0-9-]+:[0-9]+:key/[a-f0-9-]+|[a-f0-9-]+|alias/.+)$", var.sns_kms_key_id))
+    error_message = "sns_kms_key_id は有効なKMS key ID、ARN、またはエイリアス形式である必要があります。"
+  }
 }
 
 variable "notification_types" {
@@ -161,6 +282,13 @@ variable "notification_types" {
     "autoscaling:EC2_INSTANCE_TERMINATE",
     "autoscaling:EC2_INSTANCE_TERMINATE_ERROR"
   ]
+
+  validation {
+    condition = alltrue([
+      for type in var.notification_types : can(regex("^autoscaling:EC2_INSTANCE_", type))
+    ])
+    error_message = "notification_types の各要素は有効なAuto Scaling通知タイプである必要があります。"
+  }
 }
 
 # ==================================================

@@ -208,16 +208,130 @@ output "notification_configuration" {
 # ==================================================
 
 output "effective_tags" {
-  description = "実際に適用されるタグ"
-  value = merge(
-    var.common_tags,
-    {
-      Name = local.name_prefix
-    }
-  )
+  description = "最終的に適用されたタグ"
+  value = {
+    common_tags     = local.final_common_tags
+    additional_tags = var.additional_tags
+    total_tag_count = length(local.final_common_tags) + length(var.additional_tags)
+  }
 }
 
 output "asg_name_format" {
-  description = "Auto Scaling Groupの名前形式"
-  value       = local.asg_name
+  description = "使用されているASG名の形式"
+  value = {
+    asg_name       = local.asg_name
+    name_prefix    = local.name_prefix
+    naming_pattern = var.app != "" ? "${var.project}-${var.env}-${var.app}-asg" : "${var.project}-${var.env}-asg"
+  }
+}
+
+# ==================================================
+# 運用・監視用の統合情報
+# ==================================================
+
+output "operational_summary" {
+  description = "運用・監視に必要な情報のサマリー"
+  value = {
+    # 基本情報
+    asg_name = aws_autoscaling_group.main.name
+    asg_arn  = aws_autoscaling_group.main.arn
+    capacity_info = {
+      min_size         = aws_autoscaling_group.main.min_size
+      max_size         = aws_autoscaling_group.main.max_size
+      desired_capacity = aws_autoscaling_group.main.desired_capacity
+    }
+
+    # 監視情報
+    monitoring = {
+      health_check_type         = aws_autoscaling_group.main.health_check_type
+      health_check_grace_period = aws_autoscaling_group.main.health_check_grace_period
+      cpu_high_alarm_enabled    = var.enable_cpu_high_alarm
+      cpu_low_alarm_enabled     = var.enable_cpu_low_alarm
+      notifications_enabled     = var.enable_notifications
+    }
+
+    # ネットワーク情報
+    network = {
+      availability_zones  = aws_autoscaling_group.main.availability_zones
+      vpc_zone_identifier = aws_autoscaling_group.main.vpc_zone_identifier
+      subnet_count        = length(aws_autoscaling_group.main.vpc_zone_identifier)
+    }
+
+    # 起動テンプレート情報
+    launch_template = {
+      id      = var.launch_template_id
+      version = var.launch_template_version
+    }
+  }
+}
+
+output "aws_cli_commands" {
+  description = "AWS CLIを使用した管理コマンドの例"
+  value = {
+    describe_asg       = "aws autoscaling describe-auto-scaling-groups --auto-scaling-group-names ${aws_autoscaling_group.main.name}"
+    scaling_activities = "aws autoscaling describe-scaling-activities --auto-scaling-group-name ${aws_autoscaling_group.main.name}"
+    manual_scale_up    = "aws autoscaling set-desired-capacity --auto-scaling-group-name ${aws_autoscaling_group.main.name} --desired-capacity $((${var.desired_capacity} + 1))"
+    manual_scale_down  = "aws autoscaling set-desired-capacity --auto-scaling-group-name ${aws_autoscaling_group.main.name} --desired-capacity $((${var.desired_capacity} - 1))"
+    suspend_scaling    = "aws autoscaling suspend-processes --auto-scaling-group-name ${aws_autoscaling_group.main.name}"
+    resume_scaling     = "aws autoscaling resume-processes --auto-scaling-group-name ${aws_autoscaling_group.main.name}"
+  }
+}
+
+output "terraform_commands" {
+  description = "Terraform管理コマンドの例"
+  value = {
+    refresh_state   = "terraform refresh"
+    show_state      = "terraform show"
+    import_existing = "terraform import aws_autoscaling_group.main ${aws_autoscaling_group.main.name}"
+    targeted_apply  = "terraform apply -target=aws_autoscaling_group.main"
+  }
+}
+
+output "troubleshooting_info" {
+  description = "トラブルシューティング用の情報"
+  value = {
+    # CloudWatch ログ関連
+    cloudwatch_log_groups = [
+      "/aws/ec2/autoscaling",
+      "/aws/events/autoscaling",
+    ]
+
+    # 設定検証
+    configuration_check = {
+      min_size_valid            = var.min_size <= var.desired_capacity
+      subnet_count_adequate     = length(local.subnet_ids) >= 1
+      notification_config_valid = !var.enable_notifications || length(var.notification_email_addresses) > 0
+    }
+
+    # アラーム状態確認コマンド
+    alarm_commands = var.enable_cpu_high_alarm || var.enable_cpu_low_alarm ? {
+      list_alarms   = "aws cloudwatch describe-alarms --alarm-name-prefix ${local.name_prefix}-asg"
+      alarm_history = "aws cloudwatch describe-alarm-history --alarm-name ${local.name_prefix}-asg-cpu-high"
+    } : {}
+  }
+}
+
+output "cost_optimization_tips" {
+  description = "コスト最適化のためのヒント"
+  value = {
+    current_config = {
+      environment      = var.env
+      min_size         = var.min_size
+      desired_capacity = var.desired_capacity
+      max_size         = var.desired_capacity * 2
+    }
+
+    suggestions = var.env == "prod" ? [
+      "本番環境: スケジュールベースのスケーリングを検討してください",
+      "本番環境: Spot インスタンスの混在使用を検討してください",
+      "本番環境: 詳細監視でコストと性能のバランスを取ってください"
+      ] : var.env == "dev" ? [
+      "開発環境: min_size を 0 に設定して夜間停止を検討してください",
+      "開発環境: business-hours スケジュールの適用を検討してください",
+      "開発環境: 基本監視で十分な場合があります"
+      ] : [
+      "ステージング環境: 本番環境より小さな構成を検討してください",
+      "ステージング環境: スケジュールベースの運用を検討してください"
+    ]
+  }
 }

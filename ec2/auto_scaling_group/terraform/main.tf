@@ -1,4 +1,21 @@
 # ==================================================
+# EC2 Auto Scaling Group Terraform Module
+# ==================================================
+#
+# このモジュールは AWS Auto Scaling Group とその関連リソースを管理します
+#
+# 主な機能:
+# - Auto Scaling Group の作成・管理
+# - CloudWatch アラームによる監視
+# - SNS 通知によるアラート
+# - スケーリングポリシーの自動制御
+# - 詳細なタグ戦略の実装
+#
+# 最新更新: 2024年12月
+# 対応バージョン: Terraform 1.0+, AWS Provider 5.x+
+# ==================================================
+
+# ==================================================
 # データソース
 # ==================================================
 
@@ -19,6 +36,11 @@ data "aws_subnets" "default" {
     name   = "vpc-id"
     values = [data.aws_vpc.default.id]
   }
+
+  filter {
+    name   = "state"
+    values = ["available"]
+  }
 }
 
 # 指定されたAZのデフォルトVPCサブネット取得（availability_zonesが指定されている場合）
@@ -33,6 +55,11 @@ data "aws_subnets" "default_filtered" {
   filter {
     name   = "availability-zone"
     values = var.availability_zones
+  }
+
+  filter {
+    name   = "state"
+    values = ["available"]
   }
 }
 
@@ -68,7 +95,7 @@ locals {
   notification_endpoints = length(var.notification_email_addresses) > 0 ? var.notification_email_addresses : []
 
   # ==================================================
-  # タグ戦略の実装
+  # 統合タグ戦略の実装
   # ==================================================
 
   # 基本タグ（すべてのリソースに適用）
@@ -103,12 +130,16 @@ locals {
   }
 
   # 環境固有タグ
-  env_tags = var.env == "prod" ? {
+  env_specific_tags = var.env == "prod" ? {
     "CriticalityLevel" = "high"
     "AuditRequired"    = "yes"
     "RetentionPeriod"  = "7-years"
-    } : {
+    } : var.env == "stg" ? {
     "CriticalityLevel" = "medium"
+    "AuditRequired"    = "yes"
+    "RetentionPeriod"  = "3-years"
+    } : {
+    "CriticalityLevel" = "low"
     "AuditRequired"    = "no"
     "RetentionPeriod"  = "1-year"
   }
@@ -122,18 +153,18 @@ locals {
     "HealthCheck" = var.health_check_type
   }
 
-  # 最終的な共通タグ（優先度: 追加タグ > 共通タグ > 環境固有 > セキュリティ > 運用 > サービス > 基本）
+  # 最終的な共通タグ（優先度を考慮した結合）
   final_common_tags = merge(
     local.base_tags,
     local.service_tags,
     local.operational_tags,
     local.security_tags,
-    local.env_tags,
+    local.env_specific_tags,
     var.common_tags
   )
 
   # ==================================================
-  # 安全なARN参照（カウントが0の場合のエラーを回避）
+  # 安全なARN参照（リソースが存在しない場合のエラーを回避）
   # ==================================================
 
   # SNS Topic ARN（通知が有効な場合のみ）
@@ -144,6 +175,16 @@ locals {
 
   # スケールダウンポリシーARN（有効な場合のみ）
   scale_down_policy_arn = var.enable_scale_down_policy && length(aws_autoscaling_policy.scale_down) > 0 ? aws_autoscaling_policy.scale_down[0].arn : null
+
+  # ==================================================
+  # バリデーション
+  # ==================================================
+
+  # 最小サイズが希望サイズより大きくないことを確認
+  validate_min_size = var.min_size <= var.desired_capacity ? true : tobool("min_size must be less than or equal to desired_capacity")
+
+  # 通知が有効な場合、メールアドレスが設定されていることを確認
+  validate_notification_emails = !var.enable_notifications || length(var.notification_email_addresses) > 0 ? true : tobool("notification_email_addresses must be provided when enable_notifications is true")
 }
 
 # ==================================================
