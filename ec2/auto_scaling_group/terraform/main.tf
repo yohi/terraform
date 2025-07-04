@@ -42,6 +42,12 @@ data "aws_availability_zones" "available" {
 }
 
 # ==================================================
+# 時間リソース（固定の作成時間用）
+# ==================================================
+
+resource "time_static" "created_at" {}
+
+# ==================================================
 # ローカル変数
 # ==================================================
 
@@ -72,7 +78,7 @@ locals {
     "Project"            = var.project
     "Environment"        = var.env
     "Application"        = var.app
-    "CreatedAt"          = formatdate("YYYY-MM-DD", timestamp())
+    "CreatedAt"          = formatdate("YYYY-MM-DD", time_static.created_at.rfc3339)
     "CreatedBy"          = data.aws_caller_identity.current.user_id
     "AccountId"          = data.aws_caller_identity.current.account_id
     "Region"             = data.aws_region.current.name
