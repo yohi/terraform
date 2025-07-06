@@ -39,7 +39,7 @@ locals {
         description  = "Keep last ${var.tagged_image_count_limit} tagged images"
         selection = {
           tagStatus     = "tagged"
-          tagPrefixList = ["v", "latest", "main", "master", "dev", "staging", "prod"]
+          tagPrefixList = ["v", "latest", "main", "master", "dev", "staging", "prd"]
           countType     = "imageCountMoreThan"
           countNumber   = var.tagged_image_count_limit
         }
@@ -122,8 +122,10 @@ resource "aws_ecr_repository" "main" {
   tags = merge(
     var.common_tags,
     {
-      Name      = each.value.name
-      ManagedBy = "terraform"
+      Name        = each.value.name
+      Project     = var.project_name
+      Environment = var.environment
+      ManagedBy   = "Terraform"
     }
   )
 }

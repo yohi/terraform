@@ -50,26 +50,26 @@ module "ecr_repositories" {
   source = "./ecr/repository/terraform"
 
   project_name = "my-project"
-  environment  = "prod"
+  environment  = "prd"
 
   # 複数リポジトリ定義
   repositories = [
     {
-      name                 = "my-project-prod-frontend"
+      name                 = "my-project-prd-frontend"
       image_tag_mutability = "IMMUTABLE"
       scan_on_push         = true
       encryption_type      = "KMS"
       kms_key_id          = "alias/my-ecr-key"
     },
     {
-      name                 = "my-project-prod-backend"
+      name                 = "my-project-prd-backend"
       image_tag_mutability = "IMMUTABLE"
       scan_on_push         = true
       encryption_type      = "KMS"
       kms_key_id          = "alias/my-ecr-key"
     },
     {
-      name                 = "my-project-prod-worker"
+      name                 = "my-project-prd-worker"
       image_tag_mutability = "MUTABLE"
       scan_on_push         = false
       encryption_type      = "AES256"
@@ -86,7 +86,7 @@ module "ecr_repositories" {
         description  = "Keep last 5 production images"
         selection = {
           tagStatus     = "tagged"
-          tagPrefixList = ["prod-", "release-"]
+          tagPrefixList = ["prd-", "release-"]
           countType     = "imageCountMoreThan"
           countNumber   = 5
         }
@@ -111,7 +111,7 @@ module "ecr_repositories" {
 
   common_tags = {
     Project     = "my-project"
-    Environment = "prod"
+    Environment = "prd"
     Owner       = "devops-team"
     Terraform   = "true"
   }
@@ -125,7 +125,7 @@ module "shared_ecr_repository" {
   source = "./ecr/repository/terraform"
 
   project_name = "shared"
-  environment  = "common"
+  environment  = "dev"
   app          = "base-images"
 
   # リポジトリポリシー設定
@@ -152,7 +152,7 @@ module "shared_ecr_repository" {
 
   common_tags = {
     Project     = "shared"
-    Environment = "common"
+    Environment = "dev"
     Owner       = "platform-team"
     Terraform   = "true"
   }
@@ -163,10 +163,10 @@ module "shared_ecr_repository" {
 
 ### 必須変数
 
-| 変数名         | 説明           | 型       |
-| -------------- | -------------- | -------- |
-| `project_name` | プロジェクト名 | `string` |
-| `environment`  | 環境名         | `string` |
+| 変数名         | 説明                                   | 型       |
+| -------------- | -------------------------------------- | -------- |
+| `project_name` | プロジェクト名                         | `string` |
+| `environment`  | 環境名 (prd, rls, stg, dev のいずれか) | `string` |
 
 ### 主要な設定変数
 
