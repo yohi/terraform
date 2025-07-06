@@ -222,7 +222,7 @@ terraform init
 ./plan_with_confirmation.sh
 
 # 2. または、変数を事前に指定
-terraform plan -var="project=rcs" -var="env=stg" -var="logs_s3_prefix=s3-prefix"
+terraform plan -var="project=rcs" -var="environment=stg" -var="logs_s3_prefix=s3-prefix"
 
 # 3. terraform.tfvarsファイルを編集して使用
 terraform plan

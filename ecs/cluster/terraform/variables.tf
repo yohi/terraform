@@ -8,7 +8,7 @@ variable "aws_region" {
   default     = "ap-northeast-1"
 }
 
-variable "project" {
+variable "project_name" {
   description = "プロジェクト名"
   type        = string
 }
@@ -18,7 +18,7 @@ variable "env" {
   type        = string
 
   validation {
-    condition     = contains(["dev", "stg", "prod"], var.env)
+    condition     = contains(["dev", "stg", "prod"], var.environment)
     error_message = "env must be one of the following values: dev, stg, or prod."
   }
 }

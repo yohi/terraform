@@ -21,7 +21,7 @@ output "aws_arn" {
 
 output "project" {
   description = "Project name"
-  value       = var.project
+  value       = var.project_name
 }
 
 output "environment" {
@@ -289,7 +289,7 @@ output "environment_isolation_info" {
     workgroup_name      = aws_athena_workgroup.main.name
     database_name       = local.athena_database_name
     allowed_environment = var.env
-    allowed_project     = var.project
+    allowed_project     = var.project_name
     allowed_app         = var.app
     access_restrictions = {
       only_assigned_workgroup = true

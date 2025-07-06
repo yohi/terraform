@@ -97,8 +97,8 @@ done
 
 # 2. Environment
 while true; do
-    read -p "2. Environment name (e.g., prd, stg, dev): " env
-    if [ -n "$env" ]; then
+    read -p "2. Environment name (e.g., prd, stg, dev): " environment
+    if [ -n "$environment" ]; then
         break
     else
         echo "   ❌ Environment name cannot be empty. Please enter a valid environment name."
@@ -118,11 +118,11 @@ done
 echo ""
 echo "✅ Variables collected:"
 echo "   Project: $project"
-echo "   Environment: $env"
+echo "   Environment: $environment"
 echo "   S3 Logs Prefix: $logs_s3_prefix"
 echo ""
 
 # Run terraform plan with collected variables
-echo "Executing: terraform plan -var=\"project=$project\" -var=\"env=$env\" -var=\"logs_s3_prefix=$logs_s3_prefix\" $@"
+echo "Executing: terraform plan -var=\"project=$project\" -var=\"environment=$environment\" -var=\"logs_s3_prefix=$logs_s3_prefix\" $@"
 echo ""
-terraform plan -var="project=$project" -var="env=$env" -var="logs_s3_prefix=$logs_s3_prefix" "$@"
+terraform plan -var="project=$project" -var="environment=$environment" -var="logs_s3_prefix=$logs_s3_prefix" "$@"

@@ -221,7 +221,7 @@ output "asg_name_format" {
   value = {
     asg_name       = local.asg_name
     name_prefix    = local.name_prefix
-    naming_pattern = var.app != "" ? "${var.project}-${var.env}-${var.app}-asg" : "${var.project}-${var.env}-asg"
+    naming_pattern = var.app != "" ? "${var.project_name}-${var.env}-${var.app}-asg" : "${var.project_name}-${var.env}-asg"
   }
 }
 

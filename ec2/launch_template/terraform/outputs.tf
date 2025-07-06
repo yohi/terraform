@@ -63,7 +63,7 @@ output "parameter_store_names" {
 
 output "mackerel_parameter_prefix" {
   description = "使用されるMackerelのParameter Storeプレフィックス"
-  value       = var.mackerel_parameter_prefix != "" ? var.mackerel_parameter_prefix : "/${var.project}/${var.env}/mackerel/"
+  value       = var.mackerel_parameter_prefix != "" ? var.mackerel_parameter_prefix : "/${var.project_name}/${var.environment}/mackerel/"
 }
 
 output "effective_mackerel_settings" {
@@ -83,6 +83,6 @@ output "effective_cloudwatch_settings" {
     namespace               = local.effective_cloudwatch_namespace
     collection_interval     = var.cloudwatch_metrics_collection_interval
     has_config             = local.final_cloudwatch_config != "" ? true : false
-    parameter_name         = var.cloudwatch_agent_config != "" ? var.cloudwatch_agent_config : "AmazonCloudWatch-Agent_${var.project}-ecs"
+    parameter_name         = var.cloudwatch_agent_config != "" ? var.cloudwatch_agent_config : "AmazonCloudWatch-Agent_${var.project_name}-ecs"
   }
 }

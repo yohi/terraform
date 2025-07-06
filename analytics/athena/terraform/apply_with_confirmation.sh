@@ -197,8 +197,8 @@ collect_terraform_variables() {
 
     # 2. Environment
     while true; do
-        read -p "2. Environment name (e.g., prd, stg, dev): " env
-        if validate_input "env" "$env"; then
+        read -p "2. Environment name (e.g., prd, stg, dev): " environment
+        if validate_input "environment" "$environment"; then
             break
         else
             echo "   Please enter a valid environment name."
@@ -218,7 +218,7 @@ collect_terraform_variables() {
     echo ""
     print_colored "$GREEN" "✅ Variables collected:"
     echo "   Project: $project"
-    echo "   Environment: $env"
+    echo "   Environment: $environment"
     echo "   S3 Logs Prefix: $logs_s3_prefix"
     echo ""
 }
@@ -249,7 +249,7 @@ run_terraform_apply() {
     if [ "$has_plan_file" = false ]; then
         terraform_cmd+=(
             -var="project=$project"
-            -var="env=$env"
+            -var="environment=$environment"
             -var="logs_s3_prefix=$logs_s3_prefix"
         )
     fi

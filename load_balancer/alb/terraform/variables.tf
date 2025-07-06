@@ -8,7 +8,7 @@ variable "aws_region" {
   default     = "ap-northeast-1"
 }
 
-variable "project" {
+variable "project_name" {
   description = "プロジェクト名"
   type        = string
   default     = "myproject"

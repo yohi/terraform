@@ -5,7 +5,7 @@
 locals {
   # 単一リポジトリの名前決定
   single_repository_name = var.repository_name != "" ? var.repository_name : (
-    var.app != "" ? "${var.project}-${var.env}-${var.app}" : "${var.project}-${var.env}"
+    var.app != "" ? "${var.project_name}-${var.env}-${var.app}" : "${var.project_name}-${var.env}"
   )
 
   # リポジトリのリスト作成（単一リポジトリまたは複数リポジトリ）
@@ -188,6 +188,6 @@ resource "aws_ecr_replication_configuration" "main" {
 resource "aws_ecr_pull_through_cache_rule" "main" {
   count = var.enable_pull_through_cache && var.upstream_registry_url != "" ? 1 : 0
 
-  ecr_repository_prefix = "${var.project}-${var.env}"
+  ecr_repository_prefix = "${var.project_name}-${var.env}"
   upstream_registry_url = var.upstream_registry_url
 }

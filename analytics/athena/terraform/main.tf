@@ -198,10 +198,10 @@ resource "aws_s3_bucket_public_access_block" "logs_bucket_pab" {
 
 # Local values for consistent naming and tagging
 locals {
-  project_env = "${var.project}-${var.env}"
+  project_env = "${var.project_name}-${var.env}"
   # プロジェクト、環境、アプリケーション名を組み合わせたデータベース名を使用
   # 例: rcs_prd_web_logs のように環境と案件が明確になる命名規則
-  default_database_name = "${var.project}_${var.env}_${var.app}_logs"
+  default_database_name = "${var.project_name}_${var.env}_${var.app}_logs"
   athena_database_name  = var.athena_database_name != "" ? var.athena_database_name : local.default_database_name
 
   # ==================================================
@@ -244,7 +244,7 @@ locals {
   # 基本タグ（すべてのリソースに適用）
   base_tags = {
     "ManagedBy"   = "terraform"
-    "Project"     = var.project
+    "Project"     = var.project_name
     "Environment" = var.env
     "Application" = var.app
     "AccountId"   = data.aws_caller_identity.current.account_id
@@ -311,7 +311,7 @@ locals {
 # AWS Glue Database（index.html手順1に準拠）
 resource "aws_glue_catalog_database" "main" {
   name        = local.athena_database_name
-  description = "Database for ${var.project} ${var.env} analytics data"
+  description = "Database for ${var.project_name} ${var.env} analytics data"
 
   catalog_id = data.aws_caller_identity.current.account_id
 

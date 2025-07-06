@@ -1,18 +1,18 @@
 # Required variables (no defaults) - order determines input sequence
-variable "project" {
+variable "project_name" {
   description = "Project name (e.g., rcs, myapp)"
   type        = string
   validation {
-    condition     = length(var.project) > 0
+    condition     = length(var.project_name) > 0
     error_message = "Project name must not be empty."
   }
 }
 
-variable "env" {
+variable "environment" {
   description = "Environment name (e.g., prd, stg, dev)"
   type        = string
   validation {
-    condition     = length(var.env) > 0
+    condition     = length(var.environment) > 0
     error_message = "Environment name must not be empty."
   }
 }

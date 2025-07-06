@@ -4,7 +4,7 @@
 
 locals {
   # クラスター名の決定（優先順位: 明示的指定 > 自動生成）
-  cluster_name = var.cluster_name != "" ? var.cluster_name : "${var.project}-${var.env}-ecs"
+      cluster_name = var.cluster_name != "" ? var.cluster_name : "${var.project_name}-${var.environment}-ecs"
 
   # Execute Command用ロググループ名の決定
   execute_command_log_group_name = var.execute_command_log_group_name != "" ? var.execute_command_log_group_name : "/aws/ecs/execute-command/${local.cluster_name}"

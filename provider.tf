@@ -20,8 +20,8 @@ terraform {
 locals {
   # 必須タグを保証するために、var.common_tagsと必須タグをマージ
   required_tags = {
-    Project     = var.project
-    Environment = var.env
+    Project     = var.project_name
+    Environment = var.environment
     ManagedBy   = "terraform"
   }
 

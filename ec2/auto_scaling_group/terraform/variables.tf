@@ -31,13 +31,13 @@ variable "aws_region" {
   }
 }
 
-variable "project" {
+variable "project_name" {
   description = "プロジェクト名"
   type        = string
   default     = "myproject"
 
   validation {
-    condition     = can(regex("^[a-z0-9-]+$", var.project)) && length(var.project) >= 2 && length(var.project) <= 32
+    condition     = can(regex("^[a-z0-9-]+$", var.project_name)) && length(var.project_name) >= 2 && length(var.project_name) <= 32
     error_message = "project は2-32文字の英小文字、数字、ハイフンのみ使用可能です。"
   }
 }
@@ -48,7 +48,7 @@ variable "env" {
   default     = "dev"
 
   validation {
-    condition     = contains(["dev", "stg", "test", "prod"], var.env)
+    condition     = contains(["dev", "stg", "test", "prod"], var.environment)
     error_message = "env は 'dev', 'stg', 'test', 'prod' のいずれかである必要があります。"
   }
 }

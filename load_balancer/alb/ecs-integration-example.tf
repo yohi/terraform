@@ -4,7 +4,7 @@
 # このファイルは参考例です。実際の使用時は適切な場所にコピーして使用してください。
 
 # 変数定義
-variable "project" {
+variable "project_name" {
   description = "プロジェクト名"
   type        = string
   default     = "myproject"
@@ -45,8 +45,8 @@ module "alb" {
   source = "./terraform"
 
   # 基本設定
-  project = var.project
-  env     = var.env
+  project = var.project_name
+      env     = var.environment
   app     = "web"
 
   # ネットワーク設定
@@ -63,8 +63,8 @@ module "alb" {
   health_check_matcher  = "200"
 
   common_tags = {
-    Project     = var.project
-    Environment = var.env
+    Project     = var.project_name
+    Environment = var.environment
     ManagedBy   = "terraform"
     Component   = "load-balancer"
   }
@@ -74,7 +74,7 @@ module "alb" {
 # ECS クラスター
 # ==================================================
 resource "aws_ecs_cluster" "main" {
-  name = "${var.project}-${var.env}-cluster"
+  name = "${var.project_name}-${var.environment}-cluster"
 
   # パフォーマンス最適化
   setting {
@@ -83,9 +83,9 @@ resource "aws_ecs_cluster" "main" {
   }
 
   tags = {
-    Name        = "${var.project}-${var.env}-cluster"
-    Project     = var.project
-    Environment = var.env
+    Name        = "${var.project_name}-${var.environment}-cluster"
+    Project     = var.project_name
+    Environment = var.environment
     ManagedBy   = "terraform"
   }
 }
@@ -94,7 +94,7 @@ resource "aws_ecs_cluster" "main" {
 # ECS タスク実行ロール
 # ==================================================
 resource "aws_iam_role" "ecs_task_execution_role" {
-  name = "${var.project}-${var.env}-ecs-task-execution-role"
+  name = "${var.project_name}-${var.env}-ecs-task-execution-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -110,8 +110,8 @@ resource "aws_iam_role" "ecs_task_execution_role" {
   })
 
   tags = {
-    Name        = "${var.project}-${var.env}-ecs-task-execution-role"
-    Project     = var.project
+    Name        = "${var.project_name}-${var.env}-ecs-task-execution-role"
+    Project     = var.project_name
     Environment = var.env
     ManagedBy   = "terraform"
   }
@@ -126,7 +126,7 @@ resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy" {
 # ECS タスク定義
 # ==================================================
 resource "aws_ecs_task_definition" "web" {
-  family                   = "${var.project}-${var.env}-web"
+  family                   = "${var.project_name}-${var.env}-web"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
   cpu                      = "256"
@@ -158,7 +158,7 @@ resource "aws_ecs_task_definition" "web" {
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          "awslogs-group"         = "/ecs/${var.project}-${var.env}-web"
+          "awslogs-group"         = "/ecs/${var.project_name}-${var.env}-web"
           "awslogs-region"        = data.aws_region.current.name
           "awslogs-stream-prefix" = "ecs"
         }
@@ -167,8 +167,8 @@ resource "aws_ecs_task_definition" "web" {
   ])
 
   tags = {
-    Name        = "${var.project}-${var.env}-web-task"
-    Project     = var.project
+    Name        = "${var.project_name}-${var.env}-web-task"
+    Project     = var.project_name
     Environment = var.env
     ManagedBy   = "terraform"
   }
@@ -176,12 +176,12 @@ resource "aws_ecs_task_definition" "web" {
 
 # CloudWatch ログ グループ
 resource "aws_cloudwatch_log_group" "web" {
-  name              = "/ecs/${var.project}-${var.env}-web"
+  name              = "/ecs/${var.project_name}-${var.env}-web"
   retention_in_days = 7
 
   tags = {
-    Name        = "${var.project}-${var.env}-web-logs"
-    Project     = var.project
+    Name        = "${var.project_name}-${var.env}-web-logs"
+    Project     = var.project_name
     Environment = var.env
     ManagedBy   = "terraform"
   }
@@ -194,7 +194,7 @@ data "aws_region" "current" {}
 # ECS サービス
 # ==================================================
 resource "aws_ecs_service" "web" {
-  name            = "${var.project}-${var.env}-web"
+  name            = "${var.project_name}-${var.env}-web"
   cluster         = aws_ecs_cluster.main.id
   task_definition = aws_ecs_task_definition.web.arn
   desired_count   = 2
@@ -232,8 +232,8 @@ resource "aws_ecs_service" "web" {
   # }
 
   tags = {
-    Name        = "${var.project}-${var.env}-web"
-    Project     = var.project
+    Name        = "${var.project_name}-${var.env}-web"
+    Project     = var.project_name
     Environment = var.env
     ManagedBy   = "terraform"
   }
@@ -241,7 +241,7 @@ resource "aws_ecs_service" "web" {
 
 # ECSタスク用セキュリティグループ
 resource "aws_security_group" "ecs_tasks" {
-  name_prefix = "${var.project}-${var.env}-ecs-tasks-"
+  name_prefix = "${var.project_name}-${var.env}-ecs-tasks-"
   vpc_id      = var.vpc_id
 
   # ALBからのトラフィックを許可
@@ -261,8 +261,8 @@ resource "aws_security_group" "ecs_tasks" {
   }
 
   tags = {
-    Name        = "${var.project}-${var.env}-ecs-tasks"
-    Project     = var.project
+    Name        = "${var.project_name}-${var.env}-ecs-tasks"
+    Project     = var.project_name
     Environment = var.env
     ManagedBy   = "terraform"
   }

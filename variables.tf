@@ -16,7 +16,7 @@ variable "common_tags" {
   validation {
     condition = alltrue([
       for key in ["Project", "Environment", "ManagedBy"] :
-      can(var.common_tags[key]) ? length(trimspace(var.common_tags[key])) > 0 : true
+      length(trimspace(lookup(var.common_tags, key, ""))) > 0
     ])
     error_message = "common_tagsに含まれる必須タグ（Project、Environment、ManagedBy）は空文字列にできません。"
   }
@@ -26,27 +26,27 @@ variable "common_tags" {
 # プロジェクト設定
 # ==================================================
 
-variable "project" {
+variable "project_name" {
   description = "プロジェクト名"
   type        = string
 
   validation {
-    condition     = length(trimspace(var.project)) > 0
+    condition     = length(trimspace(var.project_name)) > 0
     error_message = "プロジェクト名は空文字列にできません。必須タグ「Project」として使用されます。"
   }
 }
 
-variable "env" {
+variable "environment" {
   description = "環境名 (dev, stg, prod)"
   type        = string
 
   validation {
-    condition     = length(trimspace(var.env)) > 0
+    condition     = length(trimspace(var.environment)) > 0
     error_message = "環境名は空文字列にできません。必須タグ「Environment」として使用されます。"
   }
 
   validation {
-    condition     = contains(["dev", "stg", "prod"], var.env)
+    condition     = contains(["dev", "stg", "prod"], var.environment)
     error_message = "環境名は 'dev', 'stg', 'prod' のいずれかである必要があります。"
   }
 }
