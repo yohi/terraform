@@ -32,6 +32,14 @@ variable "common_tags" {
   description = "共通タグ"
   type        = map(string)
   default     = {}
+
+  validation {
+    condition = alltrue([
+      contains(keys(var.common_tags), "Project") || var.project_name != "",
+      contains(keys(var.common_tags), "Environment") || var.env != ""
+    ])
+    error_message = "common_tags must contain 'Project' and 'Environment' keys, or these values must be provided via project_name and env variables."
+  }
 }
 
 # ==================================================

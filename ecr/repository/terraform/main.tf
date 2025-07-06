@@ -122,8 +122,10 @@ resource "aws_ecr_repository" "main" {
   tags = merge(
     var.common_tags,
     {
-      Name      = each.value.name
-      ManagedBy = "terraform"
+      Name        = each.value.name
+      Project     = var.project_name
+      Environment = var.env
+      ManagedBy   = "Terraform"
     }
   )
 }
