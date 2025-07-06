@@ -22,10 +22,10 @@
 module "ecs_service" {
   source = "./ecs/service/terraform"
 
-  project      = "my-project"
-  env          = "dev"
+  project_name = "my-project"
+  environment  = "stg"
   app          = "web"
-  cluster_name = "my-project-dev-ecs"
+  cluster_name = "my-project-stg-ecs"
 
   # コンテナ設定
   container_image = "nginx:latest"
@@ -34,7 +34,7 @@ module "ecs_service" {
 
   common_tags = {
     Project     = "my-project"
-    Environment = "dev"
+    Environment = "stg"
     Owner       = "team-name"
     Terraform   = "true"
   }
@@ -47,10 +47,10 @@ module "ecs_service" {
 module "ecs_service" {
   source = "./ecs/service/terraform"
 
-  project      = "my-project"
-  env          = "prod"
+  project_name = "my-project"
+  environment  = "prd"
   app          = "api"
-  cluster_name = "my-project-prod-ecs"
+  cluster_name = "my-project-prd-ecs"
 
   # VPC・ネットワーク設定
   vpc_id     = "vpc-12345678"
@@ -75,7 +75,7 @@ module "ecs_service" {
   secrets = [
     {
       name      = "DB_PASSWORD"
-      valueFrom = "arn:aws:ssm:ap-northeast-1:123456789012:parameter/my-project/prod/db-password"
+      valueFrom = "arn:aws:ssm:ap-northeast-1:123456789012:parameter/my-project/prd/db-password"
     }
   ]
 
@@ -102,7 +102,7 @@ module "ecs_service" {
 
   common_tags = {
     Project     = "my-project"
-    Environment = "prod"
+    Environment = "prd"
     Owner       = "devops-team"
     Terraform   = "true"
   }
@@ -115,10 +115,10 @@ module "ecs_service" {
 module "ecs_service" {
   source = "./ecs/service/terraform"
 
-  project      = "my-project"
-  env          = "dev"
+  project_name = "my-project"
+  environment  = "stg"
   app          = "complex-app"
-  cluster_name = "my-project-dev-ecs"
+  cluster_name = "my-project-stg-ecs"
 
   # カスタムコンテナ定義
   container_definitions = [
@@ -137,7 +137,7 @@ module "ecs_service" {
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          "awslogs-group"         = "/ecs/my-project-dev-complex-app"
+          "awslogs-group"         = "/ecs/my-project-stg-complex-app"
           "awslogs-region"        = "ap-northeast-1"
           "awslogs-stream-prefix" = "web"
         }
@@ -170,7 +170,7 @@ module "ecs_service" {
 
   common_tags = {
     Project     = "my-project"
-    Environment = "dev"
+    Environment = "stg"
     Owner       = "team-name"
     Terraform   = "true"
   }
@@ -183,8 +183,8 @@ module "ecs_service" {
 
 | 変数名         | 説明               | 型       |
 | -------------- | ------------------ | -------- |
-| `project`      | プロジェクト名     | `string` |
-| `env`          | 環境名             | `string` |
+| `project_name` | プロジェクト名     | `string` |
+| `environment`  | 環境名             | `string` |
 | `app`          | アプリケーション名 | `string` |
 | `cluster_name` | ECSクラスター名    | `string` |
 

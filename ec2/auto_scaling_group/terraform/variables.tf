@@ -38,7 +38,7 @@ variable "project_name" {
 
   validation {
     condition     = can(regex("^[a-z0-9-]+$", var.project_name)) && length(var.project_name) >= 2 && length(var.project_name) <= 32
-    error_message = "project は2-32文字の英小文字、数字、ハイフンのみ使用可能です。"
+    error_message = "project_name は2-32文字の英小文字、数字、ハイフンのみ使用可能です。"
   }
 }
 

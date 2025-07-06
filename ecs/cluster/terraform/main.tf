@@ -37,7 +37,8 @@ resource "aws_cloudwatch_log_group" "execute_command" {
   tags = merge(
     var.common_tags,
     {
-      Name = local.execute_command_log_group_name
+      Name      = local.execute_command_log_group_name
+      ManagedBy = "Terraform"
     }
   )
 }

@@ -14,12 +14,12 @@ variable "project_name" {
 }
 
 variable "environment" {
-  description = "環境名 (dev, stg, prod)"
+  description = "環境名 (prd, rls, stg, dev)"
   type        = string
 
   validation {
-    condition     = contains(["dev", "stg", "prod"], var.environment)
-    error_message = "environment は dev, stg, prod のいずれかである必要があります。"
+    condition     = contains(["prd", "rls", "stg", "dev"], var.environment)
+    error_message = "environment は prd, rls, stg, dev のいずれかである必要があります。"
   }
 }
 
@@ -181,7 +181,8 @@ variable "secrets" {
     name      = string
     valueFrom = string
   }))
-  default = []
+  default   = []
+  sensitive = true
 }
 
 # ==================================================

@@ -5,7 +5,7 @@
 locals {
   # 単一リポジトリの名前決定
   single_repository_name = var.repository_name != "" ? var.repository_name : (
-    var.app != "" ? "${var.project_name}-${var.env}-${var.app}" : "${var.project_name}-${var.env}"
+    var.app != "" ? "${var.project_name}-${var.environment}-${var.app}" : "${var.project_name}-${var.environment}"
   )
 
   # リポジトリのリスト作成（単一リポジトリまたは複数リポジトリ）
@@ -122,7 +122,8 @@ resource "aws_ecr_repository" "main" {
   tags = merge(
     var.common_tags,
     {
-      Name = each.value.name
+      Name      = each.value.name
+      ManagedBy = "terraform"
     }
   )
 }
@@ -188,6 +189,6 @@ resource "aws_ecr_replication_configuration" "main" {
 resource "aws_ecr_pull_through_cache_rule" "main" {
   count = var.enable_pull_through_cache && var.upstream_registry_url != "" ? 1 : 0
 
-  ecr_repository_prefix = "${var.project_name}-${var.env}"
+  ecr_repository_prefix = "${var.project_name}-${var.environment}"
   upstream_registry_url = var.upstream_registry_url
 }

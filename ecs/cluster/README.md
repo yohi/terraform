@@ -19,13 +19,13 @@
 module "ecs_cluster" {
   source = "./ecs/cluster/terraform"
 
-  project = "my-project"
-  env     = "dev"
-  app     = "web"
+  project_name = "my-project"
+  environment  = "stg"
+  app          = "web"
 
   common_tags = {
     Project     = "my-project"
-    Environment = "dev"
+    Environment = "stg"
     Owner       = "team-name"
     Terraform   = "true"
   }
@@ -38,9 +38,9 @@ module "ecs_cluster" {
 module "ecs_cluster" {
   source = "./ecs/cluster/terraform"
 
-  project      = "my-project"
-  env          = "prod"
-  cluster_name = "production-cluster"  # オプション（指定しない場合は "my-project-prod-ecs" になります）
+  project_name = "my-project"
+  environment  = "prd"
+  cluster_name = "production-cluster"  # オプション（指定しない場合は "my-project-prd-ecs" になります）
 
   # キャパシティプロバイダー戦略
   capacity_providers = ["FARGATE", "FARGATE_SPOT"]
@@ -66,7 +66,7 @@ module "ecs_cluster" {
 
   common_tags = {
     Project     = "my-project"
-    Environment = "prod"
+    Environment = "prd"
     Owner       = "devops-team"
     Terraform   = "true"
   }
@@ -77,8 +77,8 @@ module "ecs_cluster" {
 
 | 変数名                           | 説明                          | 型             | デフォルト値                  | 必須 |
 | -------------------------------- | ----------------------------- | -------------- | ----------------------------- | ---- |
-| `project`                        | プロジェクト名                | `string`       | -                             | ✓    |
-| `env`                            | 環境名                        | `string`       | -                             | ✓    |
+| `project_name`                   | プロジェクト名                | `string`       | -                             | ✓    |
+| `environment`                    | 環境名                        | `string`       | -                             | ✓    |
 | `app`                            | アプリケーション名            | `string`       | `""`                          | -    |
 | `cluster_name`                   | ECSクラスター名               | `string`       | `""`                          | -    |
 | `capacity_providers`             | キャパシティプロバイダー      | `list(string)` | `["FARGATE", "FARGATE_SPOT"]` | -    |

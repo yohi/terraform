@@ -21,9 +21,9 @@
 module "ecr_repository" {
   source = "./ecr/repository/terraform"
 
-  project = "my-project"
-  env     = "dev"
-  app     = "web"
+  project_name = "my-project"
+  environment  = "dev"
+  app          = "web"
 
   # スキャン設定
   scan_on_push = true
@@ -49,8 +49,8 @@ module "ecr_repository" {
 module "ecr_repositories" {
   source = "./ecr/repository/terraform"
 
-  project = "my-project"
-  env     = "prod"
+  project_name = "my-project"
+  environment  = "prod"
 
   # 複数リポジトリ定義
   repositories = [
@@ -124,9 +124,9 @@ module "ecr_repositories" {
 module "shared_ecr_repository" {
   source = "./ecr/repository/terraform"
 
-  project = "shared"
-  env     = "common"
-  app     = "base-images"
+  project_name = "shared"
+  environment  = "common"
+  app          = "base-images"
 
   # リポジトリポリシー設定
   enable_repository_policy = true
@@ -163,10 +163,10 @@ module "shared_ecr_repository" {
 
 ### 必須変数
 
-| 変数名    | 説明           | 型       |
-| --------- | -------------- | -------- |
-| `project` | プロジェクト名 | `string` |
-| `env`     | 環境名         | `string` |
+| 変数名         | 説明           | 型       |
+| -------------- | -------------- | -------- |
+| `project_name` | プロジェクト名 | `string` |
+| `environment`  | 環境名         | `string` |
 
 ### 主要な設定変数
 
@@ -236,17 +236,17 @@ docker push <account-id>.dkr.ecr.ap-northeast-1.amazonaws.com/my-project-dev-web
 module "ecr_repository" {
   source = "./ecr/repository/terraform"
 
-  project = "my-project"
-  env     = "dev"
-  app     = "web"
+  project_name = "my-project"
+  environment  = "dev"
+  app          = "web"
 }
 
 # ECSサービス作成（ECRイメージを使用）
 module "ecs_service" {
   source = "./ecs/service/terraform"
 
-  project      = "my-project"
-  env          = "dev"
+  project_name = "my-project"
+  environment  = "dev"
   app          = "web"
   cluster_name = "my-project-dev-ecs"
 

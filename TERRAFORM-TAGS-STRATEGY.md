@@ -28,7 +28,7 @@ provider "aws" {
     tags = {
       ManagedBy   = "terraform"
       Project     = var.project_name
-      Environment = var.env
+      Environment = var.environment
       Owner       = var.owner_team
       CostCenter  = var.cost_center
     }
@@ -55,7 +55,7 @@ locals {
   base_tags = {
     ManagedBy   = "terraform"
     Project     = var.project_name
-    Environment = var.env
+    Environment = var.environment
     Module      = "ec2-launch-template"
   }
 
@@ -86,7 +86,7 @@ locals {
 common_tags = {
   ManagedBy   = "terraform"
   Project     = var.project_name
-  Environment = var.env
+  Environment = var.environment
   Module      = "autoscaling-group"
 }
 
@@ -109,7 +109,7 @@ additional_tags = {
 common_tags = {
   ManagedBy   = "terraform"
   Project     = var.project_name
-  Environment = var.env
+  Environment = var.environment
   Module      = "athena-analytics"
   Purpose     = "log-analysis"
 }
@@ -220,7 +220,7 @@ variable "project_name" {
   default     = "myapp"
 }
 
-variable "env" {
+variable "environment" {
   description = "環境名"
   type        = string
   default     = "dev"
@@ -237,7 +237,7 @@ locals {
   base_tags = {
     ManagedBy   = "terraform"
     Project     = var.project_name
-    Environment = var.env
+    Environment = var.environment
     Module      = "example"
   }
 
@@ -268,7 +268,7 @@ locals {
   base_tags = {
     ManagedBy   = "terraform"
     Project     = var.project_name
-    Environment = var.env
+    Environment = var.environment
     Module      = "advanced-example"
   }
 

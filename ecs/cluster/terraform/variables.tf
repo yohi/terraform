@@ -14,12 +14,12 @@ variable "project_name" {
 }
 
 variable "environment" {
-  description = "環境名 (dev, stg, prod)"
+  description = "環境名 (prd, rls, stg, dev)"
   type        = string
 
   validation {
-    condition     = contains(["dev", "stg", "prod"], var.environment)
-    error_message = "environment must be one of the following values: dev, stg, or prod."
+    condition     = contains(["prd", "rls", "stg", "dev"], var.environment)
+    error_message = "environment must be one of the following values: prd, rls, stg, or dev."
   }
 }
 
@@ -91,6 +91,7 @@ variable "execute_command_kms_key_id" {
   description = "Execute Command用のKMSキーID（指定しない場合はデフォルトキーを使用）"
   type        = string
   default     = ""
+  sensitive   = true
 }
 
 variable "execute_command_log_group_name" {

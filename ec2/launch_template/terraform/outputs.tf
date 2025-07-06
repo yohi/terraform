@@ -83,6 +83,6 @@ output "effective_cloudwatch_settings" {
     namespace               = local.effective_cloudwatch_namespace
     collection_interval     = var.cloudwatch_metrics_collection_interval
     has_config             = local.final_cloudwatch_config != "" ? true : false
-    parameter_name         = var.cloudwatch_agent_config != "" ? var.cloudwatch_agent_config : "AmazonCloudWatch-Agent_${var.project_name}-ecs"
+    parameter_name         = var.cloudwatch_agent_config != "" ? var.cloudwatch_agent_config : "AmazonCloudWatch-Agent_${var.project_name}-${var.environment}-ecs"
   }
 }

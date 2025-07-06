@@ -47,12 +47,12 @@ output "service_desired_count" {
 
 output "execution_role_arn" {
   description = "タスク実行ロールARN"
-  value       = var.execution_role_arn != "" ? var.execution_role_arn : aws_iam_role.execution_role[0].arn
+  value       = var.execution_role_arn != "" ? var.execution_role_arn : try(aws_iam_role.execution_role[0].arn, null)
 }
 
 output "task_role_arn" {
   description = "タスクロールARN"
-  value       = var.task_role_arn != "" ? var.task_role_arn : aws_iam_role.task_role[0].arn
+  value       = var.task_role_arn != "" ? var.task_role_arn : try(aws_iam_role.task_role[0].arn, null)
 }
 
 # ==================================================
@@ -89,17 +89,17 @@ output "log_group_arn" {
 
 output "autoscaling_target_resource_id" {
   description = "Auto Scalingターゲットのリソース ID"
-  value       = var.enable_auto_scaling ? aws_appautoscaling_target.main[0].resource_id : null
+  value       = var.enable_auto_scaling ? try(aws_appautoscaling_target.main[0].resource_id, null) : null
 }
 
 output "autoscaling_policy_cpu_arn" {
   description = "CPU Auto ScalingポリシーARN"
-  value       = var.enable_auto_scaling ? aws_appautoscaling_policy.cpu[0].arn : null
+  value       = var.enable_auto_scaling ? try(aws_appautoscaling_policy.cpu[0].arn, null) : null
 }
 
 output "autoscaling_policy_memory_arn" {
   description = "メモリ Auto ScalingポリシーARN"
-  value       = var.enable_auto_scaling ? aws_appautoscaling_policy.memory[0].arn : null
+  value       = var.enable_auto_scaling ? try(aws_appautoscaling_policy.memory[0].arn, null) : null
 }
 
 # ==================================================
