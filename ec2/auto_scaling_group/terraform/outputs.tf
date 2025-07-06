@@ -221,7 +221,7 @@ output "asg_name_format" {
   value = {
     asg_name       = local.asg_name
     name_prefix    = local.name_prefix
-    naming_pattern = var.app != "" ? "${var.project_name}-${var.env}-${var.app}-asg" : "${var.project_name}-${var.env}-asg"
+    naming_pattern = var.app != "" ? "${var.project_name}-${var.environment}-${var.app}-asg" : "${var.project_name}-${var.environment}-asg"
   }
 }
 
@@ -315,17 +315,17 @@ output "cost_optimization_tips" {
   description = "コスト最適化のためのヒント"
   value = {
     current_config = {
-      environment      = var.env
+      environment      = var.environment
       min_size         = var.min_size
       desired_capacity = var.desired_capacity
       max_size         = var.desired_capacity * 2
     }
 
-    suggestions = var.env == "prod" ? [
+    suggestions = var.environment == "prod" ? [
       "本番環境: スケジュールベースのスケーリングを検討してください",
       "本番環境: Spot インスタンスの混在使用を検討してください",
       "本番環境: 詳細監視でコストと性能のバランスを取ってください"
-      ] : var.env == "dev" ? [
+      ] : var.environment == "dev" ? [
       "開発環境: min_size を 0 に設定して夜間停止を検討してください",
       "開発環境: business-hours スケジュールの適用を検討してください",
       "開発環境: 基本監視で十分な場合があります"

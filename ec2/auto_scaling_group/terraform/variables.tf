@@ -42,14 +42,14 @@ variable "project_name" {
   }
 }
 
-variable "env" {
+variable "environment" {
   description = "環境名（dev, stg, prodなど）"
   type        = string
   default     = "dev"
 
   validation {
     condition     = contains(["dev", "stg", "test", "prod"], var.environment)
-    error_message = "env は 'dev', 'stg', 'test', 'prod' のいずれかである必要があります。"
+    error_message = "environment は 'dev', 'stg', 'test', 'prod' のいずれかである必要があります。"
   }
 }
 

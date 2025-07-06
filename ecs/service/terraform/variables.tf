@@ -13,13 +13,13 @@ variable "project_name" {
   type        = string
 }
 
-variable "env" {
+variable "environment" {
   description = "環境名 (dev, stg, prod)"
   type        = string
 
   validation {
     condition     = contains(["dev", "stg", "prod"], var.environment)
-    error_message = "env は dev, stg, prod のいずれかである必要があります。"
+    error_message = "environment は dev, stg, prod のいずれかである必要があります。"
   }
 }
 

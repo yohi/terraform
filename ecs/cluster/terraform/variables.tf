@@ -13,13 +13,13 @@ variable "project_name" {
   type        = string
 }
 
-variable "env" {
+variable "environment" {
   description = "環境名 (dev, stg, prod)"
   type        = string
 
   validation {
     condition     = contains(["dev", "stg", "prod"], var.environment)
-    error_message = "env must be one of the following values: dev, stg, or prod."
+    error_message = "environment must be one of the following values: dev, stg, or prod."
   }
 }
 
@@ -109,6 +109,12 @@ variable "execute_command_s3_key_prefix" {
   description = "Execute Command用のS3キープレフィックス"
   type        = string
   default     = "ecs-execute-command"
+}
+
+variable "log_retention_in_days" {
+  description = "CloudWatchログの保持期間（日）"
+  type        = number
+  default     = 30
 }
 
 # ==================================================

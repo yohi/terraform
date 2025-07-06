@@ -12,8 +12,8 @@ variable "environment" {
   description = "Environment name (e.g., prd, stg, dev)"
   type        = string
   validation {
-    condition     = length(var.environment) > 0
-    error_message = "Environment name must not be empty."
+    condition     = contains(["dev", "staging", "prod"], var.environment)
+    error_message = "Environment must be one of: dev, staging, prod."
   }
 }
 

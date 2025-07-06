@@ -32,7 +32,7 @@ resource "aws_cloudwatch_log_group" "execute_command" {
   count = var.enable_execute_command_logging ? 1 : 0
 
   name              = local.execute_command_log_group_name
-  retention_in_days = 7
+  retention_in_days = var.log_retention_in_days
 
   tags = merge(
     var.common_tags,

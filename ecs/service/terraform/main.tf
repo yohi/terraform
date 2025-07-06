@@ -35,13 +35,13 @@ locals {
   subnet_ids = length(var.subnet_ids) > 0 ? var.subnet_ids : data.aws_subnets.default[0].ids
 
   # タスク定義ファミリー名
-  task_definition_family = var.task_definition_family != "" ? var.task_definition_family : "${var.project_name}-${var.env}-${var.app}"
+  task_definition_family = var.task_definition_family != "" ? var.task_definition_family : "${var.project_name}-${var.environment}-${var.app}"
 
   # サービス名
-  service_name = var.service_name != "" ? var.service_name : "${var.project_name}-${var.env}-${var.app}-service"
+  service_name = var.service_name != "" ? var.service_name : "${var.project_name}-${var.environment}-${var.app}-service"
 
   # コンテナ名
-  container_name = var.container_name != "" ? var.container_name : "${var.project_name}-${var.env}-${var.app}"
+  container_name = var.container_name != "" ? var.container_name : "${var.project_name}-${var.environment}-${var.app}"
 
   # ログ設定
   log_group_name = var.log_group_name != "" ? var.log_group_name : "/ecs/${local.task_definition_family}"
