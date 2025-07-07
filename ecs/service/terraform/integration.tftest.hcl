@@ -15,9 +15,13 @@ variables {
   app          = "integration-test"
   cluster_name = "test-cluster"
 
-  # Network configuration (must exist)
-  vpc_id     = "vpc-12345678"                         # Replace with actual VPC ID
-  subnet_ids = ["subnet-12345678", "subnet-87654321"] # Replace with actual subnet IDs
+  # Network configuration (must be provided before running tests)
+  # These can be set via environment variables:
+  # - TF_VAR_vpc_id
+  # - TF_VAR_subnet_ids
+  # Or via terraform.tfvars file
+  vpc_id     = null # Set via TF_VAR_vpc_id environment variable or terraform.tfvars
+  subnet_ids = null # Set via TF_VAR_subnet_ids environment variable or terraform.tfvars
 
   common_tags = {
     Project     = "test-ecs-service-integration"
@@ -261,12 +265,12 @@ run "test_auto_generated_name" {
   }
 
   assert {
-    condition     = can(regex("^test-ecs-service-integration-dev-integration-test$", aws_ecs_service.main.name))
+    condition     = can(regex("^${format("%s-%s-%s", var.project_name, var.environment, var.app)}$", aws_ecs_service.main.name))
     error_message = "Service name should be auto-generated correctly"
   }
 
   assert {
-    condition     = can(regex("^test-ecs-service-integration-dev-integration-test$", aws_ecs_task_definition.main.family))
+    condition     = can(regex("^${format("%s-%s-%s", var.project_name, var.environment, var.app)}$", aws_ecs_task_definition.main.family))
     error_message = "Task definition family should be auto-generated correctly"
   }
 

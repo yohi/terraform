@@ -553,7 +553,7 @@ run "key_name_empty" {
   }
 
   assert {
-    condition     = aws_launch_template.main.key_name == ""
+    condition     = aws_launch_template.main.key_name == null
     error_message = "Launch Template should not have key name when empty"
   }
 }

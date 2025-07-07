@@ -50,6 +50,15 @@ mock_provider "aws" {
     }
   }
 
+  mock_data "aws_subnets" {
+    defaults = {
+      ids = ["subnet-12345678", "subnet-87654321"]
+      tags = {
+        Name = "test-subnets"
+      }
+    }
+  }
+
   mock_resource "aws_ecs_service" {
     defaults = {
       id                  = "test-service"

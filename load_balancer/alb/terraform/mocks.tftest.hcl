@@ -121,7 +121,7 @@ mock_provider "aws" {
       protocol             = "HTTP"
       vpc_id               = "vpc-12345678"
       target_type          = "ip"
-      deregistration_delay = "30"
+      deregistration_delay = 30
       health_check = [
         {
           enabled             = true

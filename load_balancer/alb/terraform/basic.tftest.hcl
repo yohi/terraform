@@ -75,16 +75,27 @@ mock_provider "aws" {
 
   mock_resource "aws_lb_target_group" {
     defaults = {
-      id           = "tg-12345678"
-      name         = "test-tg"
-      arn          = "arn:aws:elasticloadbalancing:ap-northeast-1:123456789012:targetgroup/test-tg/1234567890123456"
-      arn_suffix   = "targetgroup/test-tg/1234567890123456"
-      port         = 80
-      protocol     = "HTTP"
-      vpc_id       = "vpc-12345678"
-      target_type  = "ip"
-      health_check = []
-      tags         = {}
+      id                   = "tg-12345678"
+      name                 = "test-tg"
+      arn                  = "arn:aws:elasticloadbalancing:ap-northeast-1:123456789012:targetgroup/test-tg/1234567890123456"
+      arn_suffix           = "targetgroup/test-tg/1234567890123456"
+      port                 = 80
+      protocol             = "HTTP"
+      vpc_id               = "vpc-12345678"
+      target_type          = "ip"
+      deregistration_delay = 30
+      health_check = [{
+        enabled             = true
+        healthy_threshold   = 2
+        unhealthy_threshold = 2
+        timeout             = 10
+        interval            = 15
+        path                = "/"
+        matcher             = "200"
+        port                = "traffic-port"
+        protocol            = "HTTP"
+      }]
+      tags = {}
     }
   }
 
@@ -95,8 +106,17 @@ mock_provider "aws" {
       load_balancer_arn = "arn:aws:elasticloadbalancing:ap-northeast-1:123456789012:loadbalancer/app/test-alb/1234567890123456"
       port              = 80
       protocol          = "HTTP"
-      default_action    = []
-      tags              = {}
+      ssl_policy        = null
+      certificate_arn   = null
+      default_action = [{
+        type = "redirect"
+        redirect = {
+          port        = "443"
+          protocol    = "HTTPS"
+          status_code = "HTTP_301"
+        }
+      }]
+      tags = {}
     }
   }
 }
@@ -282,7 +302,7 @@ run "target_group_configuration" {
   }
 
   assert {
-    condition     = aws_lb_target_group.main.deregistration_delay == "30"
+    condition     = aws_lb_target_group.main.deregistration_delay == 30
     error_message = "Deregistration delay should be 30 seconds for ECS"
   }
 }

@@ -300,7 +300,7 @@ run "mock_basic_test" {
   }
 
   assert {
-    condition     = aws_launch_template.main.block_device_mappings[0].ebs[0].encrypted == "true"
+    condition     = aws_launch_template.main.block_device_mappings[0].ebs[0].encrypted == true
     error_message = "EBS volume should be encrypted"
   }
 }

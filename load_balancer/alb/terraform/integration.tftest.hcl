@@ -35,12 +35,12 @@ run "basic_alb_integration" {
   }
 
   assert {
-    condition     = aws_lb_listener.http.port == "80"
+    condition     = aws_lb_listener.http.port == 80
     error_message = "HTTP listener should listen on port 80"
   }
 
   assert {
-    condition     = aws_lb_listener.https.port == "443"
+    condition     = aws_lb_listener.https.port == 443
     error_message = "HTTPS listener should listen on port 443"
   }
 }
@@ -144,8 +144,8 @@ run "complex_alb_integration" {
   }
 
   assert {
-    condition     = aws_lb_target_group.main.health_check[0].port == "8080"
-    error_message = "Health check port should be '8080'"
+    condition     = aws_lb_target_group.main.health_check[0].port == 8080
+    error_message = "Health check port should be 8080"
   }
 
   assert {
@@ -275,8 +275,8 @@ run "https_target_group_integration" {
   }
 
   assert {
-    condition     = aws_lb_target_group.main.health_check[0].port == "443"
-    error_message = "Health check port should be '443'"
+    condition     = aws_lb_target_group.main.health_check[0].port == 443
+    error_message = "Health check port should be 443"
   }
 }
 

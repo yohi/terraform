@@ -121,7 +121,7 @@ run "invalid_environment_production" {
   }
 
   expect_failures = [
-    var.environment,
+    "var.environment",
   ]
 }
 
@@ -135,7 +135,7 @@ run "invalid_environment_staging" {
   }
 
   expect_failures = [
-    var.environment,
+    "var.environment",
   ]
 }
 

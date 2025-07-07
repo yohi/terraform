@@ -14,7 +14,7 @@ variables {
     Project     = "test-validation"
     Environment = "dev"
     Purpose     = "testing"
-    ManagedBy   = "terraform"
+    ManagedBy   = "Terraform"
   }
 }
 

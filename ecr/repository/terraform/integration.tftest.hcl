@@ -14,6 +14,10 @@ variables {
   environment  = "dev"
   app          = "integration-test"
 
+  # AWS account ID for repository policy tests
+  # This should be set to the actual AWS account ID when running integration tests
+  aws_account_id = "123456789012"
+
   common_tags = {
     Project     = "test-ecr-integration"
     Environment = "dev"
@@ -160,7 +164,7 @@ run "test_repository_policy" {
   variables {
     repository_name          = "integration-policy-${formatdate("YYYY-MM-DD-hhmm", timestamp())}"
     enable_repository_policy = true
-    allowed_principals       = [data.aws_caller_identity.current.account_id]
+    allowed_principals       = [var.aws_account_id]
     allowed_actions = [
       "ecr:GetDownloadUrlForLayer",
       "ecr:BatchGetImage",

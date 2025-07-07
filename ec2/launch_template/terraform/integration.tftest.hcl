@@ -20,7 +20,7 @@
 
 # Test 1: 基本的な統合テスト
 run "basic_integration" {
-  command = apply
+  command = apply_and_destroy
 
   variables {
     project_name                 = "test-integration"
@@ -86,7 +86,7 @@ run "basic_integration" {
 
 # Test 2: 本番環境設定での統合テスト
 run "production_integration" {
-  command = apply
+  command = apply_and_destroy
 
   variables {
     project_name                 = "test-prod-integration"
@@ -156,7 +156,7 @@ run "production_integration" {
 
 # Test 3: カスタム設定での統合テスト
 run "custom_configuration_integration" {
-  command = apply
+  command = apply_and_destroy
 
   variables {
     project_name                           = "test-custom"
@@ -231,7 +231,7 @@ run "custom_configuration_integration" {
 
 # Test 4: SSH制限ありでの統合テスト
 run "ssh_restricted_integration" {
-  command = apply
+  command = apply_and_destroy
 
   variables {
     project_name           = "test-ssh-restricted"
@@ -270,7 +270,7 @@ run "ssh_restricted_integration" {
 
 # Test 5: 最小構成での統合テスト
 run "minimal_configuration_integration" {
-  command = apply
+  command = apply_and_destroy
 
   variables {
     project_name = "test-minimal"
@@ -321,7 +321,7 @@ run "minimal_configuration_integration" {
 
 # Test 6: Parameter Store 無効での統合テスト
 run "parameter_store_disabled_integration" {
-  command = apply
+  command = apply_and_destroy
 
   variables {
     project_name           = "test-no-params"
@@ -377,7 +377,7 @@ run "parameter_store_disabled_integration" {
 
 # Test 7: 高度な CloudWatch 設定での統合テスト
 run "advanced_cloudwatch_integration" {
-  command = apply
+  command = apply_and_destroy
 
   variables {
     project_name                           = "test-advanced-cw"
@@ -425,7 +425,7 @@ run "advanced_cloudwatch_integration" {
 
 # Test 8: 完全な出力値検証
 run "complete_outputs_validation" {
-  command = apply
+  command = apply_and_destroy
 
   variables {
     project_name                 = "test-outputs"

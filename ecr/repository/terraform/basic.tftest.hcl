@@ -29,27 +29,27 @@ run "basic_repository_creation" {
   }
 
   assert {
-    condition     = length(keys(aws_ecr_repository.main)) == 1
-    error_message = "Expected exactly one ECR repository to be created"
+    condition     = aws_ecr_repository.main != null
+    error_message = "ECR repository should be created"
   }
 
   assert {
-    condition     = can(regex("^test-ecr-dev-sample$", values(aws_ecr_repository.main)[0].name))
+    condition     = can(regex("^test-ecr-dev-sample$", aws_ecr_repository.main.name))
     error_message = "ECR repository name does not match expected pattern"
   }
 
   assert {
-    condition     = values(aws_ecr_repository.main)[0].image_tag_mutability == "MUTABLE"
+    condition     = aws_ecr_repository.main.image_tag_mutability == "MUTABLE"
     error_message = "Image tag mutability should be MUTABLE"
   }
 
   assert {
-    condition     = values(aws_ecr_repository.main)[0].image_scanning_configuration[0].scan_on_push == true
+    condition     = aws_ecr_repository.main.image_scanning_configuration[0].scan_on_push == true
     error_message = "Scan on push should be enabled"
   }
 
   assert {
-    condition     = values(aws_ecr_repository.main)[0].encryption_configuration[0].encryption_type == "AES256"
+    condition     = aws_ecr_repository.main.encryption_configuration[0].encryption_type == "AES256"
     error_message = "Encryption type should be AES256"
   }
 }
@@ -63,7 +63,7 @@ run "custom_repository_name" {
   }
 
   assert {
-    condition     = values(aws_ecr_repository.main)[0].name == "custom-repo"
+    condition     = aws_ecr_repository.main.name == "custom-repo"
     error_message = "Custom repository name should be used when specified"
   }
 }
@@ -77,7 +77,7 @@ run "immutable_tags" {
   }
 
   assert {
-    condition     = values(aws_ecr_repository.main)[0].image_tag_mutability == "IMMUTABLE"
+    condition     = aws_ecr_repository.main.image_tag_mutability == "IMMUTABLE"
     error_message = "Image tag mutability should be IMMUTABLE"
   }
 }
@@ -92,12 +92,12 @@ run "kms_encryption" {
   }
 
   assert {
-    condition     = values(aws_ecr_repository.main)[0].encryption_configuration[0].encryption_type == "KMS"
+    condition     = aws_ecr_repository.main.encryption_configuration[0].encryption_type == "KMS"
     error_message = "Encryption type should be KMS"
   }
 
   assert {
-    condition     = values(aws_ecr_repository.main)[0].encryption_configuration[0].kms_key == "arn:aws:kms:ap-northeast-1:123456789012:key/12345678-1234-1234-1234-123456789012"
+    condition     = aws_ecr_repository.main.encryption_configuration[0].kms_key == "arn:aws:kms:ap-northeast-1:123456789012:key/12345678-1234-1234-1234-123456789012"
     error_message = "KMS key should be set when encryption_type is KMS"
   }
 }
@@ -128,7 +128,7 @@ run "lifecycle_policy_disabled" {
   }
 
   assert {
-    condition     = length(keys(aws_ecr_lifecycle_policy.main)) == 0
+    condition     = aws_ecr_lifecycle_policy.main == null
     error_message = "Lifecycle policy should not be created when disabled"
   }
 }
@@ -189,22 +189,22 @@ run "verify_tags" {
   command = plan
 
   assert {
-    condition     = values(aws_ecr_repository.main)[0].tags["Project"] == "test-ecr"
+    condition     = aws_ecr_repository.main.tags["Project"] == "test-ecr"
     error_message = "Project tag should be set correctly"
   }
 
   assert {
-    condition     = values(aws_ecr_repository.main)[0].tags["Environment"] == "dev"
+    condition     = aws_ecr_repository.main.tags["Environment"] == "dev"
     error_message = "Environment tag should be set correctly"
   }
 
   assert {
-    condition     = values(aws_ecr_repository.main)[0].tags["Purpose"] == "testing"
+    condition     = aws_ecr_repository.main.tags["Purpose"] == "testing"
     error_message = "Purpose tag should be set correctly"
   }
 
   assert {
-    condition     = values(aws_ecr_repository.main)[0].tags["ManagedBy"] == "Terraform"
+    condition     = aws_ecr_repository.main.tags["ManagedBy"] == "Terraform"
     error_message = "ManagedBy tag should be set correctly"
   }
 }

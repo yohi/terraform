@@ -16,7 +16,7 @@ run "basic_integration_test" {
 
   # AWSリソースの作成確認
   assert {
-    condition     = aws_s3_bucket.logs_bucket[0].bucket == "integration-test-dev-analytics-logs"
+    condition     = length(aws_s3_bucket.logs_bucket) > 0 && aws_s3_bucket.logs_bucket[0].bucket == "integration-test-dev-analytics-logs"
     error_message = "S3 bucket should be created successfully"
   }
 
@@ -55,6 +55,33 @@ run "basic_integration_test" {
   assert {
     condition     = output.athena_console_url != ""
     error_message = "Athena console URL should be populated"
+  }
+
+  # 基本統合テストでのS3バケット暗号化設定確認（セキュリティ重要）
+  assert {
+    condition     = length(aws_s3_bucket_server_side_encryption_configuration.logs_bucket_encryption) > 0 && aws_s3_bucket_server_side_encryption_configuration.logs_bucket_encryption[0].rule[0].apply_server_side_encryption_by_default[0].sse_algorithm == "AES256"
+    error_message = "Basic test S3 bucket encryption should be configured"
+  }
+
+  # 基本統合テストでのS3バケットパブリックアクセスブロック確認（セキュリティ重要）
+  assert {
+    condition     = length(aws_s3_bucket_public_access_block.logs_bucket_pab) > 0 && aws_s3_bucket_public_access_block.logs_bucket_pab[0].block_public_acls == true
+    error_message = "Basic test S3 bucket public access should be blocked"
+  }
+
+  assert {
+    condition     = length(aws_s3_bucket_public_access_block.logs_bucket_pab) > 0 && aws_s3_bucket_public_access_block.logs_bucket_pab[0].block_public_policy == true
+    error_message = "Basic test S3 bucket public policy should be blocked"
+  }
+
+  assert {
+    condition     = length(aws_s3_bucket_public_access_block.logs_bucket_pab) > 0 && aws_s3_bucket_public_access_block.logs_bucket_pab[0].ignore_public_acls == true
+    error_message = "Basic test S3 bucket should ignore public ACLs"
+  }
+
+  assert {
+    condition     = length(aws_s3_bucket_public_access_block.logs_bucket_pab) > 0 && aws_s3_bucket_public_access_block.logs_bucket_pab[0].restrict_public_buckets == true
+    error_message = "Basic test S3 bucket should restrict public buckets"
   }
 }
 
@@ -100,14 +127,29 @@ run "complete_feature_integration_test" {
 
   # S3バケット暗号化設定確認
   assert {
-    condition     = aws_s3_bucket_server_side_encryption_configuration.logs_bucket_encryption[0].rule[0].apply_server_side_encryption_by_default[0].sse_algorithm == "AES256"
+    condition     = length(aws_s3_bucket_server_side_encryption_configuration.logs_bucket_encryption) > 0 && aws_s3_bucket_server_side_encryption_configuration.logs_bucket_encryption[0].rule[0].apply_server_side_encryption_by_default[0].sse_algorithm == "AES256"
     error_message = "S3 bucket encryption should be configured"
   }
 
-  # S3バケットパブリックアクセスブロック確認
+  # S3バケットパブリックアクセスブロック確認（全設定）
   assert {
-    condition     = aws_s3_bucket_public_access_block.logs_bucket_pab[0].block_public_acls == true
+    condition     = length(aws_s3_bucket_public_access_block.logs_bucket_pab) > 0 && aws_s3_bucket_public_access_block.logs_bucket_pab[0].block_public_acls == true
     error_message = "S3 bucket public access should be blocked"
+  }
+
+  assert {
+    condition     = length(aws_s3_bucket_public_access_block.logs_bucket_pab) > 0 && aws_s3_bucket_public_access_block.logs_bucket_pab[0].block_public_policy == true
+    error_message = "S3 bucket public policy should be blocked"
+  }
+
+  assert {
+    condition     = length(aws_s3_bucket_public_access_block.logs_bucket_pab) > 0 && aws_s3_bucket_public_access_block.logs_bucket_pab[0].ignore_public_acls == true
+    error_message = "S3 bucket should ignore public ACLs"
+  }
+
+  assert {
+    condition     = length(aws_s3_bucket_public_access_block.logs_bucket_pab) > 0 && aws_s3_bucket_public_access_block.logs_bucket_pab[0].restrict_public_buckets == true
+    error_message = "S3 bucket should restrict public buckets"
   }
 }
 
@@ -205,6 +247,33 @@ run "custom_log_types_integration_test" {
     condition     = output.athena_table_names["api"] == "integration-test-dev-api"
     error_message = "API table name should be correct"
   }
+
+  # カスタムログタイプ環境のS3バケット暗号化設定確認（セキュリティ重要）
+  assert {
+    condition     = length(aws_s3_bucket_server_side_encryption_configuration.logs_bucket_encryption) > 0 && aws_s3_bucket_server_side_encryption_configuration.logs_bucket_encryption[0].rule[0].apply_server_side_encryption_by_default[0].sse_algorithm == "AES256"
+    error_message = "Custom log types S3 bucket encryption should be configured"
+  }
+
+  # カスタムログタイプ環境のS3バケットパブリックアクセスブロック確認（セキュリティ重要）
+  assert {
+    condition     = length(aws_s3_bucket_public_access_block.logs_bucket_pab) > 0 && aws_s3_bucket_public_access_block.logs_bucket_pab[0].block_public_acls == true
+    error_message = "Custom log types S3 bucket public access should be blocked"
+  }
+
+  assert {
+    condition     = length(aws_s3_bucket_public_access_block.logs_bucket_pab) > 0 && aws_s3_bucket_public_access_block.logs_bucket_pab[0].block_public_policy == true
+    error_message = "Custom log types S3 bucket public policy should be blocked"
+  }
+
+  assert {
+    condition     = length(aws_s3_bucket_public_access_block.logs_bucket_pab) > 0 && aws_s3_bucket_public_access_block.logs_bucket_pab[0].ignore_public_acls == true
+    error_message = "Custom log types S3 bucket should ignore public ACLs"
+  }
+
+  assert {
+    condition     = length(aws_s3_bucket_public_access_block.logs_bucket_pab) > 0 && aws_s3_bucket_public_access_block.logs_bucket_pab[0].restrict_public_buckets == true
+    error_message = "Custom log types S3 bucket should restrict public buckets"
+  }
 }
 
 # Test 4: 本番環境統合テスト
@@ -231,12 +300,12 @@ run "production_environment_integration_test" {
 
   # 本番環境のタグ確認
   assert {
-    condition     = aws_s3_bucket.logs_bucket[0].tags["Environment"] == "prd"
+    condition     = length(aws_s3_bucket.logs_bucket) > 0 && aws_s3_bucket.logs_bucket[0].tags["Environment"] == "prd"
     error_message = "S3 bucket should have correct environment tag"
   }
 
   assert {
-    condition     = aws_s3_bucket.logs_bucket[0].tags["CriticalityLevel"] == "high"
+    condition     = length(aws_s3_bucket.logs_bucket) > 0 && aws_s3_bucket.logs_bucket[0].tags["CriticalityLevel"] == "high"
     error_message = "S3 bucket should have correct criticality level tag"
   }
 
@@ -259,6 +328,33 @@ run "production_environment_integration_test" {
   assert {
     condition     = aws_athena_workgroup.main.name == "integration-test-prd-analytics"
     error_message = "Production workgroup name should follow naming convention"
+  }
+
+  # 本番環境のS3バケット暗号化設定確認（セキュリティ重要）
+  assert {
+    condition     = length(aws_s3_bucket_server_side_encryption_configuration.logs_bucket_encryption) > 0 && aws_s3_bucket_server_side_encryption_configuration.logs_bucket_encryption[0].rule[0].apply_server_side_encryption_by_default[0].sse_algorithm == "AES256"
+    error_message = "Production S3 bucket encryption should be configured"
+  }
+
+  # 本番環境のS3バケットパブリックアクセスブロック確認（セキュリティ重要）
+  assert {
+    condition     = length(aws_s3_bucket_public_access_block.logs_bucket_pab) > 0 && aws_s3_bucket_public_access_block.logs_bucket_pab[0].block_public_acls == true
+    error_message = "Production S3 bucket public access should be blocked"
+  }
+
+  assert {
+    condition     = length(aws_s3_bucket_public_access_block.logs_bucket_pab) > 0 && aws_s3_bucket_public_access_block.logs_bucket_pab[0].block_public_policy == true
+    error_message = "Production S3 bucket public policy should be blocked"
+  }
+
+  assert {
+    condition     = length(aws_s3_bucket_public_access_block.logs_bucket_pab) > 0 && aws_s3_bucket_public_access_block.logs_bucket_pab[0].ignore_public_acls == true
+    error_message = "Production S3 bucket should ignore public ACLs"
+  }
+
+  assert {
+    condition     = length(aws_s3_bucket_public_access_block.logs_bucket_pab) > 0 && aws_s3_bucket_public_access_block.logs_bucket_pab[0].restrict_public_buckets == true
+    error_message = "Production S3 bucket should restrict public buckets"
   }
 }
 
@@ -373,20 +469,25 @@ run "aws_account_validation_integration_test" {
   command = apply
 
   variables {
-    project_name       = "integration-test"
-    environment        = "dev"
-    app                = "analytics"
-    logs_bucket_name   = "integration-test-dev-analytics-logs"
-    logs_s3_prefix     = "test/logs"
-    auto_create_bucket = true
-    # Note: expected_aws_account_id を実際のアカウントIDに設定する必要があります
-    # expected_aws_account_id = "123456789012"
+    project_name            = "integration-test"
+    environment             = "dev"
+    app                     = "analytics"
+    logs_bucket_name        = "integration-test-dev-analytics-logs"
+    logs_s3_prefix          = "test/logs"
+    auto_create_bucket      = true
+    expected_aws_account_id = "123456789012"
   }
 
   # AWS Account ID検証
   assert {
     condition     = data.aws_caller_identity.current.account_id != ""
     error_message = "AWS account ID should be retrieved"
+  }
+
+  # AWS Account ID厳密比較
+  assert {
+    condition     = data.aws_caller_identity.current.account_id == expected_aws_account_id
+    error_message = "AWS account ID does not match expected account ID. Expected: ${expected_aws_account_id}, Actual: ${data.aws_caller_identity.current.account_id}"
   }
 
   # データソース確認
@@ -411,7 +512,7 @@ run "resource_naming_convention_integration_test" {
 
   # リソース命名規則の確認
   assert {
-    condition     = aws_s3_bucket.logs_bucket[0].bucket == "my-project-stg-log-analytics-logs"
+    condition     = length(aws_s3_bucket.logs_bucket) > 0 && aws_s3_bucket.logs_bucket[0].bucket == "my-project-stg-log-analytics-logs"
     error_message = "S3 bucket name should follow project-env-app-logs pattern"
   }
 

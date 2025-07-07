@@ -23,7 +23,7 @@ run "valid_environment_names" {
 # Test 2: 無効な環境名での失敗
 run "invalid_environment_name" {
   command         = plan
-  expect_failures = [var.environment]
+  expect_failures = ["var.environment"]
 
   variables {
     project_name       = "test"
@@ -38,7 +38,7 @@ run "invalid_environment_name" {
 # Test 3: 空のプロジェクト名での失敗
 run "empty_project_name" {
   command         = plan
-  expect_failures = [var.project_name]
+  expect_failures = ["var.project_name"]
 
   variables {
     project_name       = ""
@@ -53,7 +53,7 @@ run "empty_project_name" {
 # Test 4: 空のアプリケーション名での失敗
 run "empty_app_name" {
   command         = plan
-  expect_failures = [var.app]
+  expect_failures = ["var.app"]
 
   variables {
     project_name       = "test"
@@ -68,7 +68,7 @@ run "empty_app_name" {
 # Test 5: 空のS3バケット名での失敗
 run "empty_logs_bucket_name" {
   command         = plan
-  expect_failures = [var.logs_bucket_name]
+  expect_failures = ["var.logs_bucket_name"]
 
   variables {
     project_name       = "test"
@@ -83,7 +83,7 @@ run "empty_logs_bucket_name" {
 # Test 6: 空のS3プレフィックスでの失敗
 run "empty_logs_s3_prefix" {
   command         = plan
-  expect_failures = [var.logs_s3_prefix]
+  expect_failures = ["var.logs_s3_prefix"]
 
   variables {
     project_name       = "test"
@@ -98,7 +98,7 @@ run "empty_logs_s3_prefix" {
 # Test 7: S3プレフィックスが'/'で終わる場合の失敗
 run "logs_s3_prefix_ends_with_slash" {
   command         = plan
-  expect_failures = [var.logs_s3_prefix]
+  expect_failures = ["var.logs_s3_prefix"]
 
   variables {
     project_name       = "test"
@@ -154,7 +154,7 @@ run "valid_crawler_schedule_expressions" {
 # Test 10: 無効なクローラー最大同時実行数での失敗
 run "invalid_crawler_max_concurrent_runs_high" {
   command         = plan
-  expect_failures = [var.crawler_max_concurrent_runs]
+  expect_failures = ["var.crawler_max_concurrent_runs"]
 
   variables {
     project_name                = "test"
@@ -170,7 +170,7 @@ run "invalid_crawler_max_concurrent_runs_high" {
 # Test 11: 無効なクローラー最大同時実行数での失敗（低い値）
 run "invalid_crawler_max_concurrent_runs_low" {
   command         = plan
-  expect_failures = [var.crawler_max_concurrent_runs]
+  expect_failures = ["var.crawler_max_concurrent_runs"]
 
   variables {
     project_name                = "test"
@@ -245,7 +245,7 @@ run "valid_data_classification" {
 # Test 15: 無効なデータ分類での失敗
 run "invalid_data_classification" {
   command         = plan
-  expect_failures = [var.data_classification]
+  expect_failures = ["var.data_classification"]
 
   variables {
     project_name        = "test"
@@ -281,7 +281,7 @@ run "valid_monitoring_levels" {
 # Test 17: 無効な監視レベルでの失敗
 run "invalid_monitoring_level" {
   command         = plan
-  expect_failures = [var.monitoring_level]
+  expect_failures = ["var.monitoring_level"]
 
   variables {
     project_name       = "test"
@@ -317,7 +317,7 @@ run "valid_retention_periods" {
 # Test 19: 無効な保持期間での失敗
 run "invalid_retention_period" {
   command         = plan
-  expect_failures = [var.retention_period]
+  expect_failures = ["var.retention_period"]
 
   variables {
     project_name       = "test"
@@ -353,7 +353,7 @@ run "valid_schedule" {
 # Test 21: 無効なスケジュールでの失敗
 run "invalid_schedule" {
   command         = plan
-  expect_failures = [var.schedule]
+  expect_failures = ["var.schedule"]
 
   variables {
     project_name       = "test"
