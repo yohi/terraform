@@ -6,6 +6,446 @@
 - モジュール化されたコードを書く
 - 環境分離を徹底する
 
+## 環境管理戦略
+
+### 1. 環境分離の実装パターン
+
+#### パターン1: ディレクトリ分離
+```
+environments/
+├── dev/
+│   ├── main.tf
+│   ├── variables.tf
+│   ├── terraform.tfvars
+│   └── backend.tf
+├── staging/
+│   ├── main.tf
+│   ├── variables.tf
+│   ├── terraform.tfvars
+│   └── backend.tf
+└── prod/
+    ├── main.tf
+    ├── variables.tf
+    ├── terraform.tfvars
+    └── backend.tf
+```
+
+#### パターン2: Workspace分離
+```bash
+# 環境ごとのワークスペースを作成
+terraform workspace new dev
+terraform workspace new staging
+terraform workspace new prod
+
+# 環境の切り替え
+terraform workspace select dev
+```
+
+#### パターン3: バックエンド分離
+```hcl
+# backend-dev.hcl
+bucket = "myproject-terraform-state-dev"
+key    = "terraform.tfstate"
+region = "ap-northeast-1"
+
+# backend-prod.hcl
+bucket = "myproject-terraform-state-prod"
+key    = "terraform.tfstate"
+region = "ap-northeast-1"
+```
+
+### 2. 環境別設定管理
+
+#### 環境固有の変数定義
+```hcl
+# variables.tf
+variable "environment" {
+  description = "Environment name"
+  type        = string
+  validation {
+    condition     = contains(["prd", "rls", "stg", "dev"], var.environment)
+    error_message = "Environment must be prd, rls, stg, or dev."
+  }
+}
+
+variable "environment_config" {
+  description = "Environment-specific configuration"
+  type = object({
+    instance_type         = string
+    min_size             = number
+    max_size             = number
+    desired_capacity     = number
+    enable_logging       = bool
+    enable_monitoring    = bool
+    enable_backup        = bool
+    retention_days       = number
+    multi_az             = bool
+    deletion_protection  = bool
+  })
+}
+
+# 環境別のデフォルト設定
+locals {
+  environment_defaults = {
+    dev = {
+      instance_type         = "t3.micro"
+      min_size             = 1
+      max_size             = 3
+      desired_capacity     = 1
+      enable_logging       = true
+      enable_monitoring    = false
+      enable_backup        = false
+      retention_days       = 7
+      multi_az             = false
+      deletion_protection  = false
+    }
+    stg = {
+      instance_type         = "t3.small"
+      min_size             = 2
+      max_size             = 6
+      desired_capacity     = 2
+      enable_logging       = true
+      enable_monitoring    = true
+      enable_backup        = true
+      retention_days       = 14
+      multi_az             = true
+      deletion_protection  = false
+    }
+    rls = {
+      instance_type         = "t3.medium"
+      min_size             = 2
+      max_size             = 8
+      desired_capacity     = 2
+      enable_logging       = true
+      enable_monitoring    = true
+      enable_backup        = true
+      retention_days       = 21
+      multi_az             = true
+      deletion_protection  = true
+    }
+    prd = {
+      instance_type         = "t3.medium"
+      min_size             = 3
+      max_size             = 10
+      desired_capacity     = 3
+      enable_logging       = true
+      enable_monitoring    = true
+      enable_backup        = true
+      retention_days       = 30
+      multi_az             = true
+      deletion_protection  = true
+    }
+  }
+
+  config = merge(local.environment_defaults[var.environment], var.environment_config)
+}
+```
+
+#### 環境別のリソース命名
+```hcl
+locals {
+  name_prefix = "${var.project_name}-${var.environment}"
+
+  # 環境別のサフィックス（衝突回避）
+  resource_suffix = var.environment == "prd" ? "" : "-${var.environment}"
+
+  # 環境別のタグ
+  environment_tags = {
+    dev = {
+      CostCenter = "development"
+      Owner      = "dev-team"
+      Schedule   = "9-18"
+    }
+    stg = {
+      CostCenter = "staging"
+      Owner      = "qa-team"
+      Schedule   = "24-7"
+    }
+    rls = {
+      CostCenter = "release"
+      Owner      = "release-team"
+      Schedule   = "24-7"
+    }
+    prd = {
+      CostCenter = "production"
+      Owner      = "ops-team"
+      Schedule   = "24-7"
+    }
+  }
+
+  common_tags = merge(
+    {
+      Project     = var.project_name
+      Environment = var.environment
+      ManagedBy   = "Terraform"
+    },
+    local.environment_tags[var.environment]
+  )
+}
+```
+
+### 3. 環境別セキュリティ設定
+
+#### セキュリティグループの環境別設定
+```hcl
+# 開発環境は緩い設定、本番環境は厳しい設定
+resource "aws_security_group" "app" {
+  name   = "${local.name_prefix}-app-sg"
+  vpc_id = var.vpc_id
+
+  # 開発環境のみSSHアクセスを許可
+  dynamic "ingress" {
+    for_each = var.environment == "dev" ? [1] : []
+    content {
+      description = "SSH access for development"
+      from_port   = 22
+      to_port     = 22
+      protocol    = "tcp"
+      cidr_blocks = ["10.0.0.0/8"]
+    }
+  }
+
+  # 本番環境のみ追加のモニタリングポートを開放
+  dynamic "ingress" {
+    for_each = var.environment == "prd" ? [1] : []
+    content {
+      description = "Monitoring port"
+      from_port   = 9100
+      to_port     = 9100
+      protocol    = "tcp"
+      cidr_blocks = ["10.0.0.0/16"]
+    }
+  }
+
+  tags = local.common_tags
+}
+
+# 環境別のKMS設定
+resource "aws_kms_key" "this" {
+  description = "${local.name_prefix} encryption key"
+
+  # 本番環境は自動ローテーション有効
+  enable_key_rotation = var.environment == "prd"
+
+  # 開発環境は短い削除期間
+  deletion_window_in_days = var.environment == "dev" ? 7 : 30
+
+  tags = local.common_tags
+}
+```
+
+### 4. 環境別のリソース設定
+
+#### データベースの環境別設定
+```hcl
+resource "aws_db_instance" "this" {
+  identifier = "${local.name_prefix}-db"
+
+  engine            = "postgres"
+  engine_version    = "15.3"
+  instance_class    = local.config.instance_type
+  allocated_storage = local.config.allocated_storage
+
+  # 環境別のバックアップ設定
+  backup_retention_period = local.config.retention_days
+  backup_window          = local.config.backup_window
+  maintenance_window     = local.config.maintenance_window
+
+  # 本番環境のみマルチAZ
+  multi_az = local.config.multi_az
+
+  # 本番環境のみ削除保護
+  deletion_protection = local.config.deletion_protection
+
+  # 開発環境は自動スナップショット無効
+  skip_final_snapshot = var.environment == "dev"
+
+  # 環境別の暗号化設定
+  encrypted = var.environment != "dev"
+  kms_key_id = var.environment != "dev" ? aws_kms_key.this.arn : null
+
+  tags = local.common_tags
+}
+```
+
+### 5. 環境別のモニタリング設定
+
+#### CloudWatch設定
+```hcl
+# 環境別のログ保持期間
+resource "aws_cloudwatch_log_group" "app" {
+  name              = "/aws/ecs/${local.name_prefix}"
+  retention_in_days = local.config.retention_days
+
+  # 本番環境のみ暗号化
+  kms_key_id = var.environment == "prd" ? aws_kms_key.this.arn : null
+
+  tags = local.common_tags
+}
+
+# 環境別のアラーム設定
+resource "aws_cloudwatch_metric_alarm" "high_cpu" {
+  count = local.config.enable_monitoring ? 1 : 0
+
+  alarm_name          = "${local.name_prefix}-high-cpu"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "2"
+  metric_name         = "CPUUtilization"
+  namespace           = "AWS/ECS"
+  period              = "300"
+  statistic           = "Average"
+
+  # 環境別の閾値
+  threshold = var.environment == "prd" ? 70 : 80
+
+  alarm_description = "This metric monitors ECS CPU utilization"
+  alarm_actions     = local.config.enable_monitoring ? [aws_sns_topic.alerts[0].arn] : []
+
+  tags = local.common_tags
+}
+```
+
+### 6. 環境別のデプロイメント戦略
+
+#### Blue/Green デプロイメント（本番環境のみ）
+```hcl
+# 本番環境のみBlue/Greenデプロイメント設定
+resource "aws_ecs_service" "this" {
+  name            = "${local.name_prefix}-service"
+  cluster         = aws_ecs_cluster.this.id
+  task_definition = aws_ecs_task_definition.this.arn
+  desired_count   = local.config.desired_capacity
+
+  # 本番環境のみBlue/Greenデプロイメント
+  dynamic "deployment_configuration" {
+    for_each = var.environment == "prd" ? [1] : []
+    content {
+      maximum_percent         = 200
+      minimum_healthy_percent = 100
+
+      deployment_circuit_breaker {
+        enable   = true
+        rollback = true
+      }
+    }
+  }
+
+  # 開発環境は高速デプロイメント
+  dynamic "deployment_configuration" {
+    for_each = var.environment == "dev" ? [1] : []
+    content {
+      maximum_percent         = 100
+      minimum_healthy_percent = 0
+    }
+  }
+
+  tags = local.common_tags
+}
+```
+
+### 7. 環境別のネットワーク設定
+
+#### VPC設定
+```hcl
+# 環境別のCIDR設定
+locals {
+  vpc_cidrs = {
+    dev = "10.0.0.0/16"
+    stg = "10.1.0.0/16"
+    rls = "10.2.0.0/16"
+    prd = "10.3.0.0/16"
+  }
+
+  # 環境別のサブネット設定
+  subnet_config = {
+    dev = {
+      public_cidrs  = ["10.0.1.0/24", "10.0.2.0/24"]
+      private_cidrs = ["10.0.11.0/24", "10.0.12.0/24"]
+    }
+    stg = {
+      public_cidrs  = ["10.1.1.0/24", "10.1.2.0/24"]
+      private_cidrs = ["10.1.11.0/24", "10.1.12.0/24"]
+    }
+    rls = {
+      public_cidrs  = ["10.2.1.0/24", "10.2.2.0/24", "10.2.3.0/24"]
+      private_cidrs = ["10.2.11.0/24", "10.2.12.0/24", "10.2.13.0/24"]
+    }
+    prd = {
+      public_cidrs  = ["10.3.1.0/24", "10.3.2.0/24", "10.3.3.0/24"]
+      private_cidrs = ["10.3.11.0/24", "10.3.12.0/24", "10.3.13.0/24"]
+    }
+  }
+}
+
+resource "aws_vpc" "this" {
+  cidr_block           = local.vpc_cidrs[var.environment]
+  enable_dns_hostnames = true
+  enable_dns_support   = true
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-vpc"
+  })
+}
+```
+
+### 8. 環境別のコスト管理
+
+#### コスト配分タグ
+```hcl
+# 環境別のコスト管理タグ
+locals {
+  cost_tags = {
+    dev = {
+      CostCenter = "development"
+      Project    = var.project_name
+      Owner      = "dev-team"
+      Budget     = "dev-budget"
+    }
+    stg = {
+      CostCenter = "staging"
+      Project    = var.project_name
+      Owner      = "qa-team"
+      Budget     = "staging-budget"
+    }
+    rls = {
+      CostCenter = "release"
+      Project    = var.project_name
+      Owner      = "release-team"
+      Budget     = "release-budget"
+    }
+    prd = {
+      CostCenter = "production"
+      Project    = var.project_name
+      Owner      = "ops-team"
+      Budget     = "prod-budget"
+    }
+  }
+}
+
+# 環境別のコスト制御
+resource "aws_budgets_budget" "this" {
+  count = var.environment == "dev" ? 1 : 0
+
+  name         = "${local.name_prefix}-budget"
+  budget_type  = "COST"
+  limit_amount = "100"
+  limit_unit   = "USD"
+  time_unit    = "MONTHLY"
+
+  cost_filters = {
+    Tag = ["Environment:${var.environment}"]
+  }
+
+  notification {
+    comparison_operator        = "GREATER_THAN"
+    threshold                 = 80
+    threshold_type            = "PERCENTAGE"
+    notification_type         = "ACTUAL"
+    subscriber_email_addresses = [var.alert_email]
+  }
+}
+```
+
 ## プロジェクト構造の規則
 ```
 service/
@@ -15,6 +455,10 @@ service/
   │   ├── outputs.tf       # 出力値定義
   │   ├── versions.tf      # プロバイダーバージョン
   │   └── terraform.tfvars.example  # 設定例
+  ├── environments/        # 環境別設定
+  │   ├── dev/
+  │   ├── staging/
+  │   └── prod/
   ├── templates/           # テンプレートファイル
   └── README.md           # モジュール説明
 ```
