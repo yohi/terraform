@@ -36,6 +36,7 @@ module "ecs_service" {
     Project     = "my-project"
     Environment = "stg"
     Owner       = "team-name"
+    ManagedBy   = "Terraform"
     Terraform   = "true"
   }
 }
@@ -104,6 +105,7 @@ module "ecs_service" {
     Project     = "my-project"
     Environment = "prd"
     Owner       = "devops-team"
+    ManagedBy   = "Terraform"
     Terraform   = "true"
   }
 }
