@@ -26,7 +26,7 @@ output "project" {
 
 output "environment" {
   description = "Environment name"
-  value       = var.env
+  value       = var.environment
 }
 
 output "app" {
@@ -288,7 +288,7 @@ output "environment_isolation_info" {
   value = {
     workgroup_name      = aws_athena_workgroup.main.name
     database_name       = local.athena_database_name
-    allowed_environment = var.env
+    allowed_environment = var.environment
     allowed_project     = var.project_name
     allowed_app         = var.app
     access_restrictions = {
@@ -302,9 +302,9 @@ output "environment_isolation_info" {
 output "usage_instructions" {
   description = "Usage instructions for environment-isolated Athena access"
   value = {
-    for_users = "Users should assume the role: ${aws_iam_role.athena_workgroup_user_role.arn} to access workgroup: ${aws_athena_workgroup.main.name}"
-    for_admins = "Administrators should attach the policy: ${aws_iam_policy.athena_admin_policy.name} for full access to workgroup: ${aws_athena_workgroup.main.name}"
-    workgroup_url = "https://${var.aws_region}.console.aws.amazon.com/athena/home?region=${var.aws_region}#/workgroups/details/${aws_athena_workgroup.main.name}"
+    for_users            = "Users should assume the role: ${aws_iam_role.athena_workgroup_user_role.arn} to access workgroup: ${aws_athena_workgroup.main.name}"
+    for_admins           = "Administrators should attach the policy: ${aws_iam_policy.athena_admin_policy.name} for full access to workgroup: ${aws_athena_workgroup.main.name}"
+    workgroup_url        = "https://${var.aws_region}.console.aws.amazon.com/athena/home?region=${var.aws_region}#/workgroups/details/${aws_athena_workgroup.main.name}"
     database_restriction = "Access is restricted to database: ${local.athena_database_name} only"
   }
 }
