@@ -14,10 +14,15 @@ variable "project_name" {
   default     = "myproject"
 }
 
-variable "env" {
-  description = "環境名（dev, stg, prodなど）"
+variable "environment" {
+  description = "環境名（prd, rls, stg, devなど）"
   type        = string
   default     = "dev"
+
+  validation {
+    condition     = contains(["prd", "rls", "stg", "dev"], var.environment)
+    error_message = "environment は prd, rls, stg, dev のいずれかである必要があります。"
+  }
 }
 
 variable "app" {

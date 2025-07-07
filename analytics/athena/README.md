@@ -162,8 +162,8 @@ cp terraform.tfvars.example terraform.tfvars
 ```
 
 **入力順序:**
-1. **project** - プロジェクト名（例: rcs, myapp）
-2. **env** - 環境名（例: prd, stg, dev）
+1. **project_name** - プロジェクト名（例: rcs, myapp）
+2. **environment** - 環境名（例: prd, rls, stg, dev）
 3. **logs_s3_prefix** - S3ログプレフィックス（例: firelens/firelens/fluent-bit-logs）
 
 **スクリプトの特徴:**

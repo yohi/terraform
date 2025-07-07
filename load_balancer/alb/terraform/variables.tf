@@ -14,10 +14,15 @@ variable "project_name" {
   default     = "myproject"
 }
 
-variable "env" {
-  description = "環境名（dev, stg, prodなど）"
+variable "environment" {
+  description = "環境名（prd, rls, stg, devなど）"
   type        = string
   default     = "dev"
+
+  validation {
+    condition     = contains(["prd", "rls", "stg", "dev"], var.environment)
+    error_message = "environment は prd, rls, stg, dev のいずれかである必要があります。"
+  }
 }
 
 variable "app" {
@@ -147,7 +152,7 @@ variable "target_group_protocol" {
 variable "target_type" {
   description = "ターゲットタイプ（instance, ip, lambda）"
   type        = string
-  default     = "ip"  # ECS用にデフォルトをipに変更
+  default     = "ip" # ECS用にデフォルトをipに変更
   validation {
     condition     = contains(["instance", "ip", "lambda"], var.target_type)
     error_message = "target_typeは 'instance', 'ip', または 'lambda' である必要があります。"
@@ -197,13 +202,13 @@ variable "health_check_unhealthy_threshold" {
 variable "health_check_timeout" {
   description = "ヘルスチェックのタイムアウト（秒）"
   type        = number
-  default     = 10  # ECS用により長いタイムアウト
+  default     = 10 # ECS用により長いタイムアウト
 }
 
 variable "health_check_interval" {
   description = "ヘルスチェックの間隔（秒）"
   type        = number
-  default     = 15  # ECS用により短い間隔
+  default     = 15 # ECS用により短い間隔
 }
 
 variable "health_check_matcher" {
