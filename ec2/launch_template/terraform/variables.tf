@@ -8,7 +8,7 @@ variable "aws_region" {
   default     = "ap-northeast-1"
 }
 
-variable "project" {
+variable "project_name" {
   description = "プロジェクト名"
   type        = string
   default     = "myproject"
@@ -310,8 +310,8 @@ variable "common_tags" {
   description = "全リソースに適用する共通タグ"
   type        = map(string)
   default = {
-    Environment = var.env
-    Project     = var.project
+    Environment = var.environment
+    Project     = var.project_name
     ManagedBy   = "terraform"
   }
 

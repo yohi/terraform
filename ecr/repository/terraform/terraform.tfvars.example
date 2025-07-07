@@ -1,0 +1,172 @@
+# ==================================================
+# 基本設定
+# ==================================================
+
+# AWSリージョン
+aws_region = "ap-northeast-1"
+
+# プロジェクト名
+project_name = "my-project"
+
+# 環境名 (prd, rls, stg, dev)
+environment = "dev"
+
+# アプリケーション名（オプション）
+app = "web"
+
+# 共通タグ
+common_tags = {
+  Project     = "my-project"
+  Environment = "dev"
+  Owner       = "team-name"
+  Terraform   = "true"
+}
+
+# ==================================================
+# 単一ECRリポジトリ設定
+# ==================================================
+
+# ECRリポジトリ名（オプション - 指定しない場合は "${project_name}-${environment}-${app}" で自動生成）
+# repository_name = "my-custom-repository"
+
+# イメージタグの変更可能性
+image_tag_mutability = "MUTABLE"
+
+# プッシュ時にイメージスキャンを実行するか
+scan_on_push = true
+
+# 暗号化タイプ
+encryption_type = "AES256"
+
+# KMS暗号化キーID（encryption_type=KMSの場合に指定）
+# kms_key_id = "alias/my-ecr-key"
+
+# ==================================================
+# 複数ECRリポジトリ設定（代替案）
+# ==================================================
+
+# 複数のECRリポジトリを作成する場合
+# repositories = [
+#   {
+#     name                 = "my-project-dev-frontend"
+#     image_tag_mutability = "MUTABLE"
+#     scan_on_push         = true
+#     encryption_type      = "AES256"
+#     kms_key_id          = ""
+#   },
+#   {
+#     name                 = "my-project-dev-backend"
+#     image_tag_mutability = "IMMUTABLE"
+#     scan_on_push         = true
+#     encryption_type      = "KMS"
+#     kms_key_id          = "alias/my-ecr-key"
+#   },
+#   {
+#     name                 = "my-project-dev-worker"
+#     image_tag_mutability = "MUTABLE"
+#     scan_on_push         = false
+#     encryption_type      = "AES256"
+#     kms_key_id          = ""
+#   }
+# ]
+
+# ==================================================
+# ライフサイクルポリシー設定
+# ==================================================
+
+# ライフサイクルポリシーを有効にするか
+enable_lifecycle_policy = true
+
+# タグなしイメージの保持数
+untagged_image_count_limit = 5
+
+# タグ付きイメージの保持数
+tagged_image_count_limit = 10
+
+# イメージの保持期間（日）
+image_age_limit_days = 30
+
+# カスタムライフサイクルポリシールール（JSONまたはテンプレート化文字列）
+# lifecycle_policy_rules = jsonencode({
+#   rules = [
+#     {
+#       rulePriority = 1
+#       description  = "Keep last 3 production images"
+#       selection = {
+#         tagStatus     = "tagged"
+#         tagPrefixList = ["prd-"]
+#         countType     = "imageCountMoreThan"
+#         countNumber   = 3
+#       }
+#       action = {
+#         type = "expire"
+#       }
+#     }
+#   ]
+# })
+
+# ==================================================
+# リポジトリポリシー設定
+# ==================================================
+
+# リポジトリポリシーを有効にするか
+enable_repository_policy = false
+
+# リポジトリへのアクセスを許可するプリンシパル（他のAWSアカウントなど）
+# allowed_principals = [
+#   "arn:aws:iam::123456789012:root",
+#   "arn:aws:iam::987654321098:root"
+# ]
+
+# 許可するECRアクション
+# allowed_actions = [
+#   "ecr:GetDownloadUrlForLayer",
+#   "ecr:BatchGetImage",
+#   "ecr:BatchCheckLayerAvailability",
+#   "ecr:GetRepositoryPolicy",
+#   "ecr:DescribeRepositories",
+#   "ecr:ListImages",
+#   "ecr:DescribeImages"
+# ]
+
+# カスタムリポジトリポリシー（JSON）
+# repository_policy_json = jsonencode({
+#   Version = "2012-10-17"
+#   Statement = [
+#     {
+#       Sid    = "AllowCrossAccountPull"
+#       Effect = "Allow"
+#       Principal = {
+#         AWS = "arn:aws:iam::123456789012:root"
+#       }
+#       Action = [
+#         "ecr:BatchCheckLayerAvailability",
+#         "ecr:GetDownloadUrlForLayer",
+#         "ecr:BatchGetImage"
+#       ]
+#     }
+#   ]
+# })
+
+# ==================================================
+# レプリケーション設定
+# ==================================================
+
+# レプリケーションを有効にするか
+enable_replication = false
+
+# レプリケーション先リージョンのリスト
+# replication_destinations = [
+#   "us-east-1",
+#   "us-west-2"
+# ]
+
+# ==================================================
+# プル経由キャッシュ設定
+# ==================================================
+
+# プル経由キャッシュを有効にするか
+enable_pull_through_cache = false
+
+# 上流レジストリURL（プル経由キャッシュ用）
+# upstream_registry_url = "public.ecr.aws"

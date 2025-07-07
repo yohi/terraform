@@ -1,0 +1,83 @@
+# ==================================================
+# 基本設定
+# ==================================================
+
+# AWSリージョン
+aws_region = "ap-northeast-1"
+
+# プロジェクト名
+project_name = "my-project"
+
+# 環境名
+environment = "stg"
+
+# アプリケーション名（オプション）
+app = "web"
+
+# 共通タグ
+common_tags = {
+  Project     = "my-project"
+  Environment = "stg"
+  Owner       = "team-name"
+  Terraform   = "true"
+}
+
+# ==================================================
+# ECSクラスター設定
+# ==================================================
+
+# ECSクラスター名（オプション - 指定しない場合は "${project_name}-${environment}-ecs" で自動生成）
+# cluster_name = "my-custom-cluster"
+
+# キャパシティプロバイダー
+capacity_providers = ["FARGATE", "FARGATE_SPOT"]
+
+# デフォルトキャパシティプロバイダー戦略
+default_capacity_provider_strategy = [
+  {
+    capacity_provider = "FARGATE"
+    weight            = 1
+    base              = 1
+  },
+  {
+    capacity_provider = "FARGATE_SPOT"
+    weight            = 4
+    base              = 0
+  }
+]
+
+# ==================================================
+# Container Insights設定
+# ==================================================
+
+# Container Insightsを有効にするか
+enable_container_insights = true
+
+# ==================================================
+# Execute Command設定
+# ==================================================
+
+# Execute Commandのログ記録を有効にするか
+enable_execute_command_logging = true
+
+# Execute Command用のKMSキーID（オプション）
+# execute_command_kms_key_id = "alias/aws/ecs"
+
+# Execute Command用のCloudWatchロググループ名（オプション）
+# execute_command_log_group_name = "/aws/ecs/execute-command/my-cluster"
+
+# Execute Command用のS3バケット名（オプション）
+# execute_command_s3_bucket_name = "my-ecs-execute-command-bucket"
+
+# Execute Command用のS3キープレフィックス
+execute_command_s3_key_prefix = "ecs-execute-command"
+
+# ==================================================
+# Service Connect設定
+# ==================================================
+
+# Service Connectを有効にするか
+enable_service_connect = false
+
+# Service Connect名前空間（Service Connect有効時に設定）
+# service_connect_namespace = "my-service-connect-namespace"

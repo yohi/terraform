@@ -47,6 +47,85 @@ mcp_awslabs_terraform-mcp-server_SearchSpecificAwsIaModules を使用
 
 ## 開発フェーズ
 
+### 環境管理のワークフロー
+
+#### 1. 環境別設定の準備
+```bash
+# 環境別ディレクトリの作成
+mkdir -p environments/{dev,stg,rls,prd}
+
+# 環境別設定ファイルの作成
+cp terraform.tfvars.example environments/dev/terraform.tfvars
+cp terraform.tfvars.example environments/stg/terraform.tfvars
+cp terraform.tfvars.example environments/rls/terraform.tfvars
+cp terraform.tfvars.example environments/prd/terraform.tfvars
+
+# 環境別バックエンド設定
+cp backend.hcl.example environments/dev/backend.hcl
+cp backend.hcl.example environments/stg/backend.hcl
+cp backend.hcl.example environments/rls/backend.hcl
+cp backend.hcl.example environments/prd/backend.hcl
+```
+
+#### 2. 環境別バックエンド初期化
+```bash
+# 開発環境
+mcp_awslabs_terraform-mcp-server_ExecuteTerraformCommand
+- command: "init"
+- working_directory: "./environments/dev"
+- variables: {
+    "backend-config": "backend.hcl"
+  }
+
+# ステージング環境
+mcp_awslabs_terraform-mcp-server_ExecuteTerraformCommand
+- command: "init"
+- working_directory: "./environments/stg"
+- variables: {
+    "backend-config": "backend.hcl"
+  }
+
+# リリース環境
+mcp_awslabs_terraform-mcp-server_ExecuteTerraformCommand
+- command: "init"
+- working_directory: "./environments/rls"
+- variables: {
+    "backend-config": "backend.hcl"
+  }
+
+# 本番環境
+mcp_awslabs_terraform-mcp-server_ExecuteTerraformCommand
+- command: "init"
+- working_directory: "./environments/prd"
+- variables: {
+    "backend-config": "backend.hcl"
+  }
+```
+
+#### 3. 環境別セキュリティスキャン
+```bash
+# 各環境のセキュリティスキャン
+mcp_awslabs_terraform-mcp-server_RunCheckovScan
+- working_directory: "./environments/dev"
+- framework: "terraform"
+- output_format: "json"
+
+mcp_awslabs_terraform-mcp-server_RunCheckovScan
+- working_directory: "./environments/stg"
+- framework: "terraform"
+- output_format: "json"
+
+mcp_awslabs_terraform-mcp-server_RunCheckovScan
+- working_directory: "./environments/rls"
+- framework: "terraform"
+- output_format: "json"
+
+mcp_awslabs_terraform-mcp-server_RunCheckovScan
+- working_directory: "./environments/prd"
+- framework: "terraform"
+- skip_check_ids: ["CKV_AWS_XXX"]  # 本番環境固有の除外設定
+```
+
 ### 設計パターン
 ```hcl
 # 1. データソースでの情報収集
@@ -56,23 +135,105 @@ data "aws_availability_zones" "available" {
   state = "available"
 }
 
-# 2. ローカル変数での共通設定
+# 2. 環境別設定の管理
 locals {
   account_id = data.aws_caller_identity.current.account_id
   region     = data.aws_region.current.name
 
-  common_tags = {
-    Project     = var.project_name
-    Environment = var.environment
-    ManagedBy   = "Terraform"
-    Account     = local.account_id
-    Region      = local.region
+  # 環境別のデフォルト設定
+  environment_defaults = {
+    dev = {
+      instance_type         = "t3.micro"
+      min_size             = 1
+      max_size             = 3
+      desired_capacity     = 1
+      enable_logging       = true
+      enable_monitoring    = false
+      enable_backup        = false
+      retention_days       = 7
+      multi_az             = false
+      deletion_protection  = false
+    }
+    stg = {
+      instance_type         = "t3.small"
+      min_size             = 2
+      max_size             = 6
+      desired_capacity     = 2
+      enable_logging       = true
+      enable_monitoring    = true
+      enable_backup        = true
+      retention_days       = 14
+      multi_az             = true
+      deletion_protection  = false
+    }
+    rls = {
+      instance_type         = "t3.medium"
+      min_size             = 2
+      max_size             = 8
+      desired_capacity     = 2
+      enable_logging       = true
+      enable_monitoring    = true
+      enable_backup        = true
+      retention_days       = 21
+      multi_az             = true
+      deletion_protection  = true
+    }
+    prd = {
+      instance_type         = "t3.medium"
+      min_size             = 3
+      max_size             = 10
+      desired_capacity     = 3
+      enable_logging       = true
+      enable_monitoring    = true
+      enable_backup        = true
+      retention_days       = 30
+      multi_az             = true
+      deletion_protection  = true
+    }
   }
+
+  # 設定のマージ
+  config = merge(local.environment_defaults[var.environment], var.environment_config)
+
+  # 環境別のタグ
+  environment_tags = {
+    dev = {
+      CostCenter = "development"
+      Owner      = "dev-team"
+      Schedule   = "9-18"
+    }
+    stg = {
+      CostCenter = "staging"
+      Owner      = "qa-team"
+      Schedule   = "24-7"
+    }
+    rls = {
+      CostCenter = "release"
+      Owner      = "release-team"
+      Schedule   = "24-7"
+    }
+    prd = {
+      CostCenter = "production"
+      Owner      = "ops-team"
+      Schedule   = "24-7"
+    }
+  }
+
+  common_tags = merge(
+    {
+      Project     = var.project_name
+      Environment = var.environment
+      ManagedBy   = "Terraform"
+      Account     = local.account_id
+      Region      = local.region
+    },
+    local.environment_tags[var.environment]
+  )
 
   name_prefix = "${var.project_name}-${var.environment}"
 }
 
-# 3. 条件分岐の活用
+# 3. 環境別条件分岐の活用
 resource "aws_s3_bucket" "this" {
   count = var.create_bucket ? 1 : 0
 
@@ -80,11 +241,24 @@ resource "aws_s3_bucket" "this" {
   tags   = local.common_tags
 }
 
-# 4. dynamic blockの活用
+# 4. 環境別dynamic blockの活用
 resource "aws_security_group" "this" {
   name   = "${local.name_prefix}-sg"
   vpc_id = var.vpc_id
 
+  # 開発環境のみSSHアクセス許可
+  dynamic "ingress" {
+    for_each = var.environment == "dev" ? [1] : []
+    content {
+      description = "SSH access for development"
+      from_port   = 22
+      to_port     = 22
+      protocol    = "tcp"
+      cidr_blocks = ["10.0.0.0/8"]
+    }
+  }
+
+  # 基本的なHTTPアクセス
   dynamic "ingress" {
     for_each = var.ingress_rules
     content {
@@ -100,35 +274,229 @@ resource "aws_security_group" "this" {
 }
 ```
 
+### 環境別のデプロイメント戦略
+
+#### 1. 開発環境（Dev）の迅速デプロイ
+```bash
+# 開発環境の計画と適用
+mcp_awslabs_terraform-mcp-server_ExecuteTerraformCommand
+- command: "plan"
+- working_directory: "./environments/dev"
+- variables: {
+    "project_name": "myproject",
+    "environment": "dev"
+  }
+
+# 承認後、即座に適用
+mcp_awslabs_terraform-mcp-server_ExecuteTerraformCommand
+- command: "apply"
+- working_directory: "./environments/dev"
+- variables: {
+    "project_name": "myproject",
+    "environment": "dev"
+  }
+```
+
+#### 2. ステージング環境（Staging）の検証デプロイ
+```bash
+# ステージング環境のセキュリティチェック
+mcp_awslabs_terraform-mcp-server_RunCheckovScan
+- working_directory: "./environments/staging"
+- framework: "terraform"
+- output_format: "json"
+
+# 計画の作成と保存
+mcp_awslabs_terraform-mcp-server_ExecuteTerraformCommand
+- command: "plan"
+- working_directory: "./environments/staging"
+- variables: {
+    "project_name": "myproject",
+    "environment": "staging"
+  }
+
+# 承認後の適用
+mcp_awslabs_terraform-mcp-server_ExecuteTerraformCommand
+- command: "apply"
+- working_directory: "./environments/staging"
+- variables: {
+    "project_name": "myproject",
+    "environment": "staging"
+  }
+```
+
+#### 3. 本番環境（Prod）の慎重デプロイ
+```bash
+# 本番環境の厳格なセキュリティチェック
+mcp_awslabs_terraform-mcp-server_RunCheckovScan
+- working_directory: "./environments/prod"
+- framework: "terraform"
+- output_format: "json"
+- skip_check_ids: []  # 本番環境では全チェック実行
+
+# 計画の詳細確認
+mcp_awslabs_terraform-mcp-server_ExecuteTerraformCommand
+- command: "plan"
+- working_directory: "./environments/prod"
+- variables: {
+    "project_name": "myproject",
+    "environment": "prod"
+  }
+
+# 慎重な適用（必要に応じて段階的に）
+mcp_awslabs_terraform-mcp-server_ExecuteTerraformCommand
+- command: "apply"
+- working_directory: "./environments/prod"
+- variables: {
+    "project_name": "myproject",
+    "environment": "prod"
+  }
+```
+
 ### 環境別設定の管理
+
+#### terraform.tfvars.dev
 ```hcl
-# terraform.tfvars.dev
 project_name = "myproject"
 environment  = "dev"
 aws_region   = "ap-northeast-1"
 
-# S3バケット設定
+# 開発環境向け設定
+environment_config = {
+  instance_type         = "t3.micro"
+  min_size             = 1
+  max_size             = 2
+  desired_capacity     = 1
+  enable_logging       = true
+  enable_monitoring    = false
+  enable_backup        = false
+  retention_days       = 7
+  multi_az             = false
+  deletion_protection  = false
+  allocated_storage    = 20
+  backup_window       = "03:00-04:00"
+  maintenance_window  = "sun:04:00-sun:05:00"
+}
+
+# 開発環境の追加設定
 create_bucket = true
 bucket_suffix = "data-dev"
 
-instance_type = "t3.micro"
-min_size     = 1
-max_size     = 3
-desired_capacity = 1
+alert_email = "dev-team@example.com"
+```
 
-# terraform.tfvars.prod
+#### terraform.tfvars.stg
+```hcl
 project_name = "myproject"
-environment  = "prod"
+environment  = "stg"
 aws_region   = "ap-northeast-1"
 
-# S3バケット設定
-create_bucket = true
-bucket_suffix = "data-prod"
+# ステージング環境向け設定
+environment_config = {
+  instance_type         = "t3.small"
+  min_size             = 2
+  max_size             = 4
+  desired_capacity     = 2
+  enable_logging       = true
+  enable_monitoring    = true
+  enable_backup        = true
+  retention_days       = 14
+  multi_az             = true
+  deletion_protection  = false
+  allocated_storage    = 50
+  backup_window       = "03:00-04:00"
+  maintenance_window  = "sun:04:00-sun:05:00"
+}
 
-instance_type = "t3.medium"
-min_size     = 2
-max_size     = 10
-desired_capacity = 3
+# ステージング環境の追加設定
+create_bucket = true
+bucket_suffix = "data-stg"
+
+alert_email = "staging-alerts@example.com"
+```
+
+#### terraform.tfvars.rls
+```hcl
+project_name = "myproject"
+environment  = "rls"
+aws_region   = "ap-northeast-1"
+
+# リリース環境向け設定
+environment_config = {
+  instance_type         = "t3.medium"
+  min_size             = 2
+  max_size             = 6
+  desired_capacity     = 2
+  enable_logging       = true
+  enable_monitoring    = true
+  enable_backup        = true
+  retention_days       = 21
+  multi_az             = true
+  deletion_protection  = true
+  allocated_storage    = 75
+  backup_window       = "03:00-04:00"
+  maintenance_window  = "sun:04:00-sun:05:00"
+}
+
+# リリース環境の追加設定
+create_bucket = true
+bucket_suffix = "data-rls"
+
+alert_email = "release-alerts@example.com"
+```
+
+#### terraform.tfvars.prd
+```hcl
+project_name = "myproject"
+environment  = "prd"
+aws_region   = "ap-northeast-1"
+
+# 本番環境向け設定
+environment_config = {
+  instance_type         = "t3.medium"
+  min_size             = 3
+  max_size             = 10
+  desired_capacity     = 3
+  enable_logging       = true
+  enable_monitoring    = true
+  enable_backup        = true
+  retention_days       = 30
+  multi_az             = true
+  deletion_protection  = true
+  allocated_storage    = 100
+  backup_window       = "03:00-04:00"
+  maintenance_window  = "sun:04:00-sun:05:00"
+}
+
+# 本番環境の追加設定
+create_bucket = true
+bucket_suffix = "data-prd"
+
+alert_email = "prod-alerts@example.com"
+```
+
+### 環境別のモニタリング・検証
+
+#### 1. 開発環境の基本検証
+```bash
+# 基本的な動作確認
+# リソースの作成確認
+# 基本的な機能テスト
+```
+
+#### 2. ステージング環境の包括的検証
+```bash
+# 統合テストの実行
+# パフォーマンステスト
+# セキュリティテスト
+# 災害復旧テスト
+```
+
+#### 3. 本番環境の継続的監視
+```bash
+# 24/7 監視の設定
+# アラート設定の確認
+# バックアップの確認
+# コンプライアンスチェック
 ```
 
 ## 検証フェーズ

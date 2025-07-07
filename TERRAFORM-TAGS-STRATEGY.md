@@ -27,8 +27,8 @@ provider "aws" {
   default_tags {
     tags = {
       ManagedBy   = "terraform"
-      Project     = var.project
-      Environment = var.env
+      Project     = var.project_name
+      Environment = var.environment
       Owner       = var.owner_team
       CostCenter  = var.cost_center
     }
@@ -54,8 +54,8 @@ locals {
   # 基本タグ
   base_tags = {
     ManagedBy   = "terraform"
-    Project     = var.project
-    Environment = var.env
+    Project     = var.project_name
+    Environment = var.environment
     Module      = "ec2-launch-template"
   }
 
@@ -85,8 +85,8 @@ locals {
 # 共通タグ
 common_tags = {
   ManagedBy   = "terraform"
-  Project     = var.project
-  Environment = var.env
+  Project     = var.project_name
+  Environment = var.environment
   Module      = "autoscaling-group"
 }
 
@@ -108,8 +108,8 @@ additional_tags = {
 ```hcl
 common_tags = {
   ManagedBy   = "terraform"
-  Project     = var.project
-  Environment = var.env
+  Project     = var.project_name
+  Environment = var.environment
   Module      = "athena-analytics"
   Purpose     = "log-analysis"
 }
@@ -214,13 +214,13 @@ lifecycle_tags = {
 ### 基本的な実装
 ```hcl
 # variables.tf
-variable "project" {
+variable "project_name" {
   description = "プロジェクト名"
   type        = string
   default     = "myapp"
 }
 
-variable "env" {
+variable "environment" {
   description = "環境名"
   type        = string
   default     = "dev"
@@ -236,8 +236,8 @@ variable "common_tags" {
 locals {
   base_tags = {
     ManagedBy   = "terraform"
-    Project     = var.project
-    Environment = var.env
+    Project     = var.project_name
+    Environment = var.environment
     Module      = "example"
   }
 
@@ -267,8 +267,8 @@ locals {
   # 基本タグ
   base_tags = {
     ManagedBy   = "terraform"
-    Project     = var.project
-    Environment = var.env
+    Project     = var.project_name
+    Environment = var.environment
     Module      = "advanced-example"
   }
 

@@ -10,11 +10,106 @@ data "aws_region" "current" {}
 
 # ローカル変数
 locals {
-  common_tags = {
-    Project     = var.project_name
-    Environment = var.environment
-    ManagedBy   = "Terraform"
+  # 環境別のデフォルト設定
+  environment_defaults = {
+    dev = {
+      instance_type         = "t3.micro"
+      min_size             = 1
+      max_size             = 3
+      desired_capacity     = 1
+      enable_logging       = true
+      enable_monitoring    = false
+      enable_backup        = false
+      retention_days       = 7
+      multi_az             = false
+      deletion_protection  = false
+      allocated_storage    = 20
+      backup_window       = "03:00-04:00"
+      maintenance_window  = "sun:04:00-sun:05:00"
+    }
+    stg = {
+      instance_type         = "t3.small"
+      min_size             = 2
+      max_size             = 6
+      desired_capacity     = 2
+      enable_logging       = true
+      enable_monitoring    = true
+      enable_backup        = true
+      retention_days       = 14
+      multi_az             = true
+      deletion_protection  = false
+      allocated_storage    = 50
+      backup_window       = "03:00-04:00"
+      maintenance_window  = "sun:04:00-sun:05:00"
+    }
+    rls = {
+      instance_type         = "t3.medium"
+      min_size             = 2
+      max_size             = 8
+      desired_capacity     = 2
+      enable_logging       = true
+      enable_monitoring    = true
+      enable_backup        = true
+      retention_days       = 21
+      multi_az             = true
+      deletion_protection  = true
+      allocated_storage    = 75
+      backup_window       = "03:00-04:00"
+      maintenance_window  = "sun:04:00-sun:05:00"
+    }
+    prd = {
+      instance_type         = "t3.medium"
+      min_size             = 3
+      max_size             = 10
+      desired_capacity     = 3
+      enable_logging       = true
+      enable_monitoring    = true
+      enable_backup        = true
+      retention_days       = 30
+      multi_az             = true
+      deletion_protection  = true
+      allocated_storage    = 100
+      backup_window       = "03:00-04:00"
+      maintenance_window  = "sun:04:00-sun:05:00"
+    }
   }
+
+  # 設定のマージ
+  config = merge(local.environment_defaults[var.environment], var.environment_config)
+
+  # 環境別のタグ
+  environment_tags = {
+    dev = {
+      CostCenter = "development"
+      Owner      = "dev-team"
+      Schedule   = "9-18"
+    }
+    stg = {
+      CostCenter = "staging"
+      Owner      = "qa-team"
+      Schedule   = "24-7"
+    }
+    rls = {
+      CostCenter = "release"
+      Owner      = "release-team"
+      Schedule   = "24-7"
+    }
+    prd = {
+      CostCenter = "production"
+      Owner      = "ops-team"
+      Schedule   = "24-7"
+    }
+  }
+
+  common_tags = merge(
+    {
+      Project     = var.project_name
+      Environment = var.environment
+      ManagedBy   = "Terraform"
+    },
+    local.environment_tags[var.environment],
+    var.tags
+  )
 
   name_prefix = "${var.project_name}-${var.environment}"
 }
@@ -27,6 +122,172 @@ resource "aws_example_resource" "this" {
 }
 ```
 
+## 環境別テンプレート
+
+### 環境別terraform.tfvars例
+
+#### dev環境 (terraform.tfvars.dev)
+```hcl
+project_name = "myproject"
+environment  = "dev"
+aws_region   = "ap-northeast-1"
+
+# 開発環境向け設定
+environment_config = {
+  instance_type         = "t3.micro"
+  min_size             = 1
+  max_size             = 2
+  desired_capacity     = 1
+  enable_logging       = true
+  enable_monitoring    = false
+  enable_backup        = false
+  retention_days       = 7
+  multi_az             = false
+  deletion_protection  = false
+  allocated_storage    = 20
+  backup_window       = "03:00-04:00"
+  maintenance_window  = "sun:04:00-sun:05:00"
+}
+
+alert_email = "dev-team@example.com"
+
+tags = {
+  CostCenter = "development"
+  Owner      = "dev-team"
+}
+```
+
+#### stg環境 (terraform.tfvars.stg)
+```hcl
+project_name = "myproject"
+environment  = "stg"
+aws_region   = "ap-northeast-1"
+
+# ステージング環境向け設定
+environment_config = {
+  instance_type         = "t3.small"
+  min_size             = 2
+  max_size             = 4
+  desired_capacity     = 2
+  enable_logging       = true
+  enable_monitoring    = true
+  enable_backup        = true
+  retention_days       = 14
+  multi_az             = true
+  deletion_protection  = false
+  allocated_storage    = 50
+  backup_window       = "03:00-04:00"
+  maintenance_window  = "sun:04:00-sun:05:00"
+}
+
+alert_email = "staging-alerts@example.com"
+
+tags = {
+  CostCenter = "staging"
+  Owner      = "qa-team"
+}
+```
+
+#### rls環境 (terraform.tfvars.rls)
+```hcl
+project_name = "myproject"
+environment  = "rls"
+aws_region   = "ap-northeast-1"
+
+# リリース環境向け設定
+environment_config = {
+  instance_type         = "t3.medium"
+  min_size             = 2
+  max_size             = 6
+  desired_capacity     = 2
+  enable_logging       = true
+  enable_monitoring    = true
+  enable_backup        = true
+  retention_days       = 21
+  multi_az             = true
+  deletion_protection  = true
+  allocated_storage    = 75
+  backup_window       = "03:00-04:00"
+  maintenance_window  = "sun:04:00-sun:05:00"
+}
+
+alert_email = "release-alerts@example.com"
+
+tags = {
+  CostCenter = "release"
+  Owner      = "release-team"
+}
+```
+
+#### prd環境 (terraform.tfvars.prd)
+```hcl
+project_name = "myproject"
+environment  = "prd"
+aws_region   = "ap-northeast-1"
+
+# 本番環境向け設定
+environment_config = {
+  instance_type         = "t3.medium"
+  min_size             = 3
+  max_size             = 10
+  desired_capacity     = 3
+  enable_logging       = true
+  enable_monitoring    = true
+  enable_backup        = true
+  retention_days       = 30
+  multi_az             = true
+  deletion_protection  = true
+  allocated_storage    = 100
+  backup_window       = "03:00-04:00"
+  maintenance_window  = "sun:04:00-sun:05:00"
+}
+
+alert_email = "prod-alerts@example.com"
+
+tags = {
+  CostCenter = "production"
+  Owner      = "ops-team"
+}
+```
+
+### 環境別バックエンド設定
+
+#### backend-dev.hcl
+```hcl
+bucket         = "myproject-terraform-state-dev"
+key            = "dev/terraform.tfstate"
+region         = "ap-northeast-1"
+encrypt        = true
+dynamodb_table = "myproject-terraform-locks-dev"
+```
+
+#### backend-stg.hcl
+```hcl
+bucket         = "myproject-terraform-state-stg"
+key            = "stg/terraform.tfstate"
+region         = "ap-northeast-1"
+encrypt        = true
+dynamodb_table = "myproject-terraform-locks-stg"
+```
+
+#### backend-rls.hcl
+```hcl
+bucket         = "myproject-terraform-state-rls"
+key            = "rls/terraform.tfstate"
+region         = "ap-northeast-1"
+encrypt        = true
+dynamodb_table = "myproject-terraform-locks-rls"
+```
+
+#### backend-prd.hcl
+```hcl
+bucket         = "myproject-terraform-state-prd"
+key            = "prd/terraform.tfstate"
+region         = "ap-northeast-1"
+encrypt        = true
+dynamodb_table = "myproject-terraform-locks-prd"
+```
+
 ### 基本的なvariables.tf構造
 ```hcl
 variable "project_name" {
@@ -35,11 +296,11 @@ variable "project_name" {
 }
 
 variable "environment" {
-  description = "Environment name (dev, staging, prod)"
+  description = "Environment name (prd, rls, stg, dev)"
   type        = string
   validation {
-    condition     = contains(["dev", "staging", "prod"], var.environment)
-    error_message = "Environment must be dev, staging, or prod."
+    condition     = contains(["prd", "rls", "stg", "dev"], var.environment)
+    error_message = "Environment must be prd, rls, stg, or dev."
   }
 }
 
@@ -53,6 +314,27 @@ variable "tags" {
   description = "Additional tags to apply to resources"
   type        = map(string)
   default     = {}
+}
+
+# 環境別設定構造体
+variable "environment_config" {
+  description = "Environment-specific configuration"
+  type = object({
+    instance_type         = string
+    min_size             = number
+    max_size             = number
+    desired_capacity     = number
+    enable_logging       = bool
+    enable_monitoring    = bool
+    enable_backup        = bool
+    retention_days       = number
+    multi_az             = bool
+    deletion_protection  = bool
+    allocated_storage    = number
+    backup_window       = string
+    maintenance_window  = string
+  })
+  default = {}
 }
 
 # 機密情報の変数定義例
@@ -70,6 +352,25 @@ variable "database_password" {
     condition     = length(var.database_password) >= 8
     error_message = "Password must be at least 8 characters long."
   }
+}
+
+# 環境別アラート設定
+variable "alert_email" {
+  description = "Email address for alerts"
+  type        = string
+  default     = ""
+}
+
+variable "vpc_id" {
+  description = "VPC ID for resource deployment"
+  type        = string
+  default     = ""
+}
+
+variable "subnet_ids" {
+  description = "List of subnet IDs"
+  type        = list(string)
+  default     = []
 }
 ```
 

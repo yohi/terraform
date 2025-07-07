@@ -4,9 +4,9 @@
 
 locals {
   # 命名規則: ${project}-${env}-${app}-{suffix} (${app}は省略可能)
-  alb_name = var.alb_name != "" ? var.alb_name : "${var.project}-${var.env}${var.app != "" ? "-${var.app}" : ""}-alb"
-  target_group_name = var.target_group_name != "" ? var.target_group_name : "${var.project}-${var.env}${var.app != "" ? "-${var.app}" : ""}-tg"
-  security_group_name = "${var.project}-${var.env}${var.app != "" ? "-${var.app}" : ""}-alb-sg"
+      alb_name = var.alb_name != "" ? var.alb_name : "${var.project_name}-${var.environment}${var.app != "" ? "-${var.app}" : ""}-alb"
+    target_group_name = var.target_group_name != "" ? var.target_group_name : "${var.project_name}-${var.environment}${var.app != "" ? "-${var.app}" : ""}-tg"
+    security_group_name = "${var.project_name}-${var.environment}${var.app != "" ? "-${var.app}" : ""}-alb-sg"
 }
 
 # ==================================================

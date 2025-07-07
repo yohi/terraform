@@ -39,7 +39,7 @@ locals {
 
   # 表示名の決定（優先順位: 明示的指定 > 自動生成）
   effective_mackerel_display_name = var.mackerel_display_name != "" ? var.mackerel_display_name : (
-    var.app != "" ? "${var.project}-${var.env}-${var.app}" : "${var.project}-${var.env}"
+    var.app != "" ? "${var.project_name}-${var.environment}-${var.app}" : "${var.project_name}-${var.environment}"
   )
 
   # ロールの決定（優先順位: 明示的指定 > デフォルト値）
@@ -74,7 +74,7 @@ locals {
 
 locals {
   # ネームスペースの決定（優先順位: 明示的指定 > 自動生成）
-  effective_cloudwatch_namespace = var.cloudwatch_default_namespace != "" ? var.cloudwatch_default_namespace : "${var.project}-metrics"
+  effective_cloudwatch_namespace = var.cloudwatch_default_namespace != "" ? var.cloudwatch_default_namespace : "${var.project_name}-metrics"
 
   # CloudWatch Agent設定のテンプレート化
   default_cloudwatch_config = var.create_default_cloudwatch_config && var.cloudwatch_agent_config_json == "" ? templatefile("${path.module}/../templates/monitoring/cloudwatch-agent.json.tpl", {
@@ -103,8 +103,8 @@ locals {
   base_tags = {
     "ManagedBy"          = "terraform"
     "TerraformWorkspace" = terraform.workspace
-    "Project"            = var.project
-    "Environment"        = var.env
+    "Project"            = var.project_name
+    "Environment"        = var.environment
     "Application"        = var.app
     "CreatedAt"          = formatdate("YYYY-MM-DD", timestamp())
     "CreatedBy"          = data.aws_caller_identity.current.user_id
@@ -117,7 +117,7 @@ locals {
     "Owner"           = var.owner_team
     "OwnerEmail"      = var.owner_email
     "CostCenter"      = var.cost_center
-    "BillingCode"     = var.billing_code != "" ? var.billing_code : "PROJ-2024-${var.project}"
+    "BillingCode"     = var.billing_code != "" ? var.billing_code : "PROJ-2024-${var.project_name}"
     "Schedule"        = var.schedule
     "BackupRequired"  = var.backup_required ? "yes" : "no"
     "MonitoringLevel" = var.monitoring_level
@@ -131,7 +131,7 @@ locals {
   }
 
   # 環境固有タグ
-  env_tags = var.env == "prod" ? {
+  env_tags = var.environment == "prod" ? {
     "CriticalityLevel" = "high"
     "AuditRequired"    = "yes"
     "RetentionPeriod"  = "7-years"
@@ -166,7 +166,7 @@ locals {
 # ==================================================
 
 resource "aws_security_group" "main" {
-  name        = "${var.project}-${var.env}-ec2-sg"
+      name        = "${var.project_name}-${var.environment}-ec2-sg"
   description = "EC2インスタンス用セキュリティグループ"
   vpc_id      = data.aws_vpc.default.id
 
@@ -218,7 +218,7 @@ resource "aws_security_group" "main" {
   tags = merge(
     local.final_common_tags,
     {
-      Name      = "${var.project}-${var.env}-ec2-sg"
+      Name      = "${var.project_name}-${var.environment}-ec2-sg"
       Component = "security-group"
       Purpose   = "ec2-access-control"
     }
@@ -230,8 +230,8 @@ resource "aws_security_group" "main" {
 # ==================================================
 
 resource "aws_launch_template" "main" {
-  name_prefix = var.app != "" ? "${var.project}-${var.env}-${var.app}-tpl-" : "${var.project}-${var.env}-tpl-"
-  description = "EC2起動テンプレート for ${var.project}-${var.env}"
+      name_prefix = var.app != "" ? "${var.project_name}-${var.environment}-${var.app}-tpl-" : "${var.project_name}-${var.environment}-tpl-"
+      description = "EC2起動テンプレート for ${var.project_name}-${var.environment}"
 
   # AMI設定（Amazon Linux 2023 ECS最適化）
   image_id = data.aws_ami.amazon_linux.id
@@ -279,11 +279,11 @@ resource "aws_launch_template" "main" {
   # ユーザーデータ
   user_data = base64encode(templatefile("${path.module}/../templates/scripts/user_data.sh", {
     aws_region                = var.aws_region
-    ecs_cluster_name          = var.ecs_cluster_name != "" ? var.ecs_cluster_name : "${var.project}-${var.env}-ecs"
+          ecs_cluster_name          = var.ecs_cluster_name != "" ? var.ecs_cluster_name : "${var.project_name}-${var.environment}-ecs"
     ecs_app_type              = var.app != "" ? upper(var.app) : ""
-    cloudwatch_agent_config   = var.cloudwatch_agent_config != "" ? var.cloudwatch_agent_config : "/${var.project}/${var.env}/config/cloudwatch/agent"
+          cloudwatch_agent_config   = var.cloudwatch_agent_config != "" ? var.cloudwatch_agent_config : "/${var.project_name}/${var.environment}/config/cloudwatch/agent"
     mackerel_api_key          = local.effective_mackerel_api_key
-    mackerel_parameter_prefix = var.mackerel_parameter_prefix != "" ? var.mackerel_parameter_prefix : "/${var.project}/${var.env}/config/mackerel/"
+          mackerel_parameter_prefix = var.mackerel_parameter_prefix != "" ? var.mackerel_parameter_prefix : "/${var.project_name}/${var.environment}/config/mackerel/"
     mackerel_auto_retirement  = var.mackerel_auto_retirement
     ctop_version              = var.ctop_version
     custom_user_data          = var.custom_user_data
@@ -295,7 +295,7 @@ resource "aws_launch_template" "main" {
     tags = merge(
       local.final_common_tags,
       {
-        Name = var.app != "" ? "${var.project}-${var.env}-${var.app}-ec2" : "${var.project}-${var.env}-ec2"
+        Name = var.app != "" ? "${var.project_name}-${var.environment}-${var.app}-ec2" : "${var.project_name}-${var.environment}-ec2"
       }
     )
   }
@@ -306,7 +306,7 @@ resource "aws_launch_template" "main" {
     tags = merge(
       local.final_common_tags,
       {
-        Name      = var.app != "" ? "${var.project}-${var.env}-${var.app}-volume" : "${var.project}-${var.env}-volume"
+        Name      = var.app != "" ? "${var.project_name}-${var.environment}-${var.app}-volume" : "${var.project_name}-${var.environment}-volume"
         Component = "ebs-volume"
         Purpose   = "root-storage"
       }
@@ -319,7 +319,7 @@ resource "aws_launch_template" "main" {
     tags = merge(
       local.final_common_tags,
       {
-        Name      = var.app != "" ? "${var.project}-${var.env}-${var.app}-eni" : "${var.project}-${var.env}-eni"
+        Name      = var.app != "" ? "${var.project_name}-${var.environment}-${var.app}-eni" : "${var.project_name}-${var.environment}-eni"
         Component = "network-interface"
         Purpose   = "ec2-network"
       }
@@ -329,7 +329,7 @@ resource "aws_launch_template" "main" {
   tags = merge(
     local.final_common_tags,
     {
-      Name      = var.app != "" ? "${var.project}-${var.env}-${var.app}-tpl" : "${var.project}-${var.env}-tpl"
+              Name      = var.app != "" ? "${var.project_name}-${var.environment}-${var.app}-tpl" : "${var.project_name}-${var.environment}-tpl"
       Component = "launch-template"
       Purpose   = "ec2-instance-template"
     }
@@ -348,7 +348,7 @@ resource "aws_launch_template" "main" {
 resource "aws_ssm_parameter" "mackerel_api_key" {
   count = var.create_parameter_store && local.effective_mackerel_api_key != "" ? 1 : 0
 
-  name  = "${var.mackerel_parameter_prefix != "" ? var.mackerel_parameter_prefix : "/${var.project}/${var.env}/config/mackerel/"}api-key"
+      name  = "${var.mackerel_parameter_prefix != "" ? var.mackerel_parameter_prefix : "/${var.project_name}/${var.environment}/config/mackerel/"}api-key"
   type  = "SecureString"
   value = local.effective_mackerel_api_key
 
@@ -369,7 +369,7 @@ resource "aws_ssm_parameter" "mackerel_api_key" {
 resource "aws_ssm_parameter" "mackerel_display_name" {
   count = var.create_parameter_store && local.effective_mackerel_display_name != "" ? 1 : 0
 
-  name  = "${var.mackerel_parameter_prefix != "" ? var.mackerel_parameter_prefix : "/${var.project}/${var.env}/config/mackerel/"}display-name"
+      name  = "${var.mackerel_parameter_prefix != "" ? var.mackerel_parameter_prefix : "/${var.project_name}/${var.environment}/config/mackerel/"}display-name"
   type  = "String"
   value = local.effective_mackerel_display_name
 
@@ -387,7 +387,7 @@ resource "aws_ssm_parameter" "mackerel_display_name" {
 resource "aws_ssm_parameter" "mackerel_organization" {
   count = var.create_parameter_store && var.mackerel_organization != "" ? 1 : 0
 
-  name  = "${var.mackerel_parameter_prefix != "" ? var.mackerel_parameter_prefix : "/${var.project}/${var.env}/config/mackerel/"}organization"
+      name  = "${var.mackerel_parameter_prefix != "" ? var.mackerel_parameter_prefix : "/${var.project_name}/${var.environment}/config/mackerel/"}organization"
   type  = "String"
   value = var.mackerel_organization
 
@@ -405,7 +405,7 @@ resource "aws_ssm_parameter" "mackerel_organization" {
 resource "aws_ssm_parameter" "mackerel_roles" {
   count = var.create_parameter_store && local.effective_mackerel_roles != "" ? 1 : 0
 
-  name  = "${var.mackerel_parameter_prefix != "" ? var.mackerel_parameter_prefix : "/${var.project}/${var.env}/config/mackerel/"}roles"
+      name  = "${var.mackerel_parameter_prefix != "" ? var.mackerel_parameter_prefix : "/${var.project_name}/${var.environment}/config/mackerel/"}roles"
   type  = "String"
   value = local.effective_mackerel_roles
 
@@ -423,7 +423,7 @@ resource "aws_ssm_parameter" "mackerel_roles" {
 resource "aws_ssm_parameter" "mackerel_auto_retirement" {
   count = var.create_parameter_store && var.mackerel_auto_retirement != "" ? 1 : 0
 
-  name  = "${var.mackerel_parameter_prefix != "" ? var.mackerel_parameter_prefix : "/${var.project}/${var.env}/config/mackerel/"}auto-retirement"
+      name  = "${var.mackerel_parameter_prefix != "" ? var.mackerel_parameter_prefix : "/${var.project_name}/${var.environment}/config/mackerel/"}auto-retirement"
   type  = "String"
   value = var.mackerel_auto_retirement
 
@@ -441,7 +441,7 @@ resource "aws_ssm_parameter" "mackerel_auto_retirement" {
 resource "aws_ssm_parameter" "mackerel_agent_config" {
   count = var.create_parameter_store && local.final_mackerel_config != "" ? 1 : 0
 
-  name  = "${var.mackerel_parameter_prefix != "" ? var.mackerel_parameter_prefix : "/${var.project}/${var.env}/config/mackerel/"}api-conf"
+      name  = "${var.mackerel_parameter_prefix != "" ? var.mackerel_parameter_prefix : "/${var.project_name}/${var.environment}/config/mackerel/"}api-conf"
   type  = "String"
   value = local.final_mackerel_config
 
@@ -459,7 +459,7 @@ resource "aws_ssm_parameter" "mackerel_agent_config" {
 resource "aws_ssm_parameter" "mackerel_sysconfig_config" {
   count = var.create_parameter_store && local.final_mackerel_sysconfig != "" ? 1 : 0
 
-  name  = "${var.mackerel_parameter_prefix != "" ? var.mackerel_parameter_prefix : "/${var.project}/${var.env}/config/mackerel/"}agent"
+      name  = "${var.mackerel_parameter_prefix != "" ? var.mackerel_parameter_prefix : "/${var.project_name}/${var.environment}/config/mackerel/"}agent"
   type  = "String"
   value = local.final_mackerel_sysconfig
 
@@ -477,7 +477,7 @@ resource "aws_ssm_parameter" "mackerel_sysconfig_config" {
 resource "aws_ssm_parameter" "cloudwatch_agent_config" {
   count = var.create_parameter_store && local.final_cloudwatch_config != "" ? 1 : 0
 
-  name  = var.cloudwatch_agent_config != "" ? var.cloudwatch_agent_config : "/${var.project}/${var.env}/config/cloudwatch/agent"
+      name  = var.cloudwatch_agent_config != "" ? var.cloudwatch_agent_config : "/${var.project_name}/${var.environment}/config/cloudwatch/agent"
   type  = "String"
   value = local.final_cloudwatch_config
 

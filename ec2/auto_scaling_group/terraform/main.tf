@@ -80,10 +80,10 @@ resource "time_static" "created_at" {}
 
 locals {
   # ASG名の決定（${project}-${env}-${app}-asg、appは省略可能）
-  asg_name = var.app != "" ? "${var.project}-${var.env}-${var.app}-asg" : "${var.project}-${var.env}-asg"
+  asg_name = var.app != "" ? "${var.project_name}-${var.environment}-${var.app}-asg" : "${var.project_name}-${var.environment}-asg"
 
   # その他のリソース名プレフィックス
-  name_prefix = var.app != "" ? "${var.project}-${var.env}-${var.app}" : "${var.project}-${var.env}"
+  name_prefix = var.app != "" ? "${var.project_name}-${var.environment}-${var.app}" : "${var.project_name}-${var.environment}"
 
   # アベイラビリティーゾーンの決定（指定されている場合は使用、なければ利用可能なすべてのAZ）
   availability_zones = length(var.availability_zones) > 0 ? var.availability_zones : data.aws_availability_zones.available.names
@@ -102,8 +102,8 @@ locals {
   base_tags = {
     "ManagedBy"          = "terraform"
     "TerraformWorkspace" = terraform.workspace
-    "Project"            = var.project
-    "Environment"        = var.env
+    "Project"            = var.project_name
+    "Environment"        = var.environment
     "Application"        = var.app
     "CreatedAt"          = formatdate("YYYY-MM-DD", time_static.created_at.rfc3339)
     "CreatedBy"          = data.aws_caller_identity.current.user_id
@@ -116,7 +116,7 @@ locals {
     "Owner"           = var.owner_team
     "OwnerEmail"      = var.owner_email
     "CostCenter"      = var.cost_center
-    "BillingCode"     = var.billing_code != "" ? var.billing_code : "PROJ-2024-${var.project}"
+    "BillingCode"     = var.billing_code != "" ? var.billing_code : "PROJ-2024-${var.project_name}"
     "Schedule"        = var.schedule
     "BackupRequired"  = var.backup_required ? "yes" : "no"
     "MonitoringLevel" = var.monitoring_level
@@ -130,11 +130,11 @@ locals {
   }
 
   # 環境固有タグ
-  env_specific_tags = var.env == "prod" ? {
+  env_specific_tags = var.environment == "prod" ? {
     "CriticalityLevel" = "high"
     "AuditRequired"    = "yes"
     "RetentionPeriod"  = "7-years"
-    } : var.env == "stg" ? {
+    } : var.environment == "stg" ? {
     "CriticalityLevel" = "medium"
     "AuditRequired"    = "yes"
     "RetentionPeriod"  = "3-years"
