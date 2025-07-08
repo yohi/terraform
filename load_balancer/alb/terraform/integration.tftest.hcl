@@ -1,18 +1,37 @@
 # Integration tests for ALB Module
 # Tests with real AWS resources (requires valid credentials)
 
+# ==================================================
+# SETUP INSTRUCTIONS
+# ==================================================
+# Before running these integration tests, you MUST provide environment-specific values
+# for vpc_id, subnet_ids, and ssl_certificate_arn. You can do this in two ways:
+#
+# Option 1: Environment variables
+#   export TF_VAR_vpc_id="vpc-your-actual-vpc-id"
+#   export TF_VAR_subnet_ids='["subnet-id1", "subnet-id2"]'
+#   export TF_VAR_ssl_certificate_arn="arn:aws:acm:region:account:certificate/cert-id"
+#
+# Option 2: Create terraform.tfvars file (copy from terraform.tfvars.example)
+#   vpc_id = "vpc-your-actual-vpc-id"
+#   subnet_ids = ["subnet-id1", "subnet-id2"]
+#   ssl_certificate_arn = "arn:aws:acm:region:account:certificate/cert-id"
+#
+# ==================================================
+
 # Variables for test environment configuration
-# These can be set via environment variables (TF_VAR_vpc_id, TF_VAR_subnet_ids, etc.)
+# These MUST be set via environment variables (TF_VAR_vpc_id, TF_VAR_subnet_ids, etc.)
+# or through terraform.tfvars files to avoid environment-specific conflicts
 variable "vpc_id" {
-  description = "VPC ID for testing"
+  description = "VPC ID for testing - must be provided via environment variable or tfvars file"
   type        = string
-  default     = "vpc-12345678"
+  default     = ""
 }
 
 variable "subnet_ids" {
-  description = "Subnet IDs for testing"
+  description = "Subnet IDs for testing - must be provided via environment variable or tfvars file"
   type        = list(string)
-  default     = ["subnet-12345678", "subnet-87654321"]
+  default     = []
 }
 
 variable "ssl_certificate_arn" {
