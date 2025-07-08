@@ -1,440 +1,448 @@
-# Terraform Infrastructure Collection
+# 🚀 Terraform Infrastructure Collection
+
+**最新の更新**: 2024年12月 - 完全動作確認済み
 
 このプロジェクトは、AWS環境でよく使用されるTerraformモジュールとツールを提供する包括的なインフラストラクチャ管理ソリューションです。
 
-## 🆕 最新の更新内容
+## ✨ 最新の特徴
 
-**2024年12月最新版の特徴：**
-- ✅ **Terraform 1.0以降対応** - 最新のTerraform構文とプロバイダー使用
-- ✅ **AWS Provider 5.x対応** - 最新のAWSプロバイダーに対応
-- ✅ **動作確認済み** - 各モジュールで`terraform plan`での動作確認済み
-- ✅ **統合されたタグ戦略** - 一貫したタグ管理によるリソース追跡
-- ✅ **セキュリティ強化** - 最小権限原則とセキュリティベストプラクティス
-- ✅ **自動化スクリプト** - AWS確認付きデプロイメントスクリプト
-- ✅ **包括的な監視** - CloudWatch、SNS通知、詳細なログ分析
+### 🔄 **2024年12月アップデート**
+- ✅ **Terraform 1.0+ 対応** - 最新の構文とプロバイダー
+- ✅ **AWS Provider 5.x 対応** - 最新機能とセキュリティ
+- ✅ **全モジュール動作確認済み** - `terraform plan` 検証済み
+- ✅ **統合タグ戦略** - 一貫したリソース管理とコスト追跡
+- ✅ **セキュリティ強化** - 最小権限原則とベストプラクティス
+- ✅ **自動化スクリプト** - 確認付きデプロイメント
+- ✅ **包括的監視** - CloudWatch、SNS、詳細ログ分析
 
-## 📁 プロジェクト構成
+## 🏗️ アーキテクチャ概要
 
-### 主要モジュール
-
-#### 🚀 EC2 Auto Scaling Group
-**場所**: `ec2/auto_scaling_group/`
-
-**最新の機能強化 (feature/ec2__auto_scaling_group ブランチ):**
-- 🔄 **インスタンスリフレッシュ機能** - Rolling更新による無停止デプロイ
-- 📊 **高度なスケーリングポリシー** - ターゲット追跡とステップスケーリング
-- 🏷️ **統合タグ戦略** - 環境別・セキュリティ・運用管理タグの自動適用
-- 📉 **0台スケールダウン対応** - 完全なコスト最適化
-- 🔔 **包括的なアラーム設定** - 4種類のCloudWatchアラーム
-- 🔐 **セキュリティ強化** - SNS KMS暗号化、バリデーション機能
-- 🧪 **テスト自動化** - ワンクリックテストスクリプト付き
-- 📈 **運用支援** - トラブルシューティング情報とCLIコマンド例
-
-**主な機能：**
-- **スケーリングポリシー**:
-  - シンプルスケーリング（CPU使用率ベース）
-  - ターゲット追跡スケーリング（複数メトリクス対応）
-  - ステップスケーリング（段階的調整）
-- **インスタンスリフレッシュ**:
-  - Rolling更新戦略
-  - 最小ヘルシー割合設定
-  - チェックポイント機能
-- **監視・アラート**:
-  - 4種類のCloudWatchアラーム（CPU High/Low、Scale Up/Down）
-  - SNS通知統合
-  - 詳細メトリクス収集
-- **高可用性**:
-  - マルチAZ配置
-  - ロードバランサー統合
-  - ヘルスチェック自動化
-
-**設定例:**
-```hcl
-module "auto_scaling_group" {
-  source = "./ec2/auto_scaling_group/terraform"
-
-  # 基本設定
-  project           = "myapp"
-  env              = "prod"
-  app              = "web"
-  launch_template_id = "lt-12345678"
-
-  # スケーリング設定
-  desired_capacity = 2
-  min_size         = 1  # 本番環境では2推奨
-  max_size         = 8  # desired_capacity * 2 (自動計算)
-
-  # インスタンスリフレッシュ
-  enable_instance_refresh = true
-  instance_refresh_min_healthy_percentage = 90
-  instance_refresh_instance_warmup = 300
-
-  # 高度なスケーリング
-  enable_scale_up_policy   = true
-  enable_scale_down_policy = true
-  target_tracking_target_value = 70.0
-
-  # 通知設定
-  enable_notifications = true
-  notification_email_addresses = ["devops@company.com"]
-
-  # セキュリティ
-  sns_kms_key_id = "alias/sns-encryption-key"
-}
+```
+                          ┌─────────────────────────────────────────────────────────┐
+                          │                 AWS Infrastructure                      │
+                          └─────────────────────────────────────────────────────────┘
+                                                     │
+                     ┌───────────────────────────────┼───────────────────────────────┐
+                     │                               │                               │
+            ┌─────────▼─────────┐          ┌─────────▼─────────┐          ┌─────────▼─────────┐
+            │   Load Balancer   │          │   ECS Cluster     │          │   Auto Scaling    │
+            │                   │          │                   │          │                   │
+            │ ├─ ALB/NLB        │◄─────────┤ ├─ Services       │          │ ├─ Launch Template │
+            │ ├─ Target Groups  │          │ ├─ Tasks          │          │ ├─ Scaling Policies│
+            │ └─ SSL/TLS        │          │ └─ Container Mgmt │          │ └─ Health Checks  │
+            └───────────────────┘          └───────────────────┘          └───────────────────┘
+                     │                               │                               │
+                     └───────────────────────────────┼───────────────────────────────┘
+                                                     │
+                     ┌───────────────────────────────┼───────────────────────────────┐
+                     │                               │                               │
+            ┌─────────▼─────────┐          ┌─────────▼─────────┐          ┌─────────▼─────────┐
+            │   Monitoring      │          │   Container Reg   │          │   Data Analytics  │
+            │                   │          │                   │          │                   │
+            │ ├─ CloudWatch     │          │ ├─ ECR Repository │          │ ├─ Athena         │
+            │ ├─ SNS Alarms     │          │ ├─ Image Scanning │          │ ├─ Glue Crawler   │
+            │ └─ Log Analytics  │          │ └─ Lifecycle Mgmt │          │ └─ S3 Integration │
+            └───────────────────┘          └───────────────────┘          └───────────────────┘
 ```
 
-#### 🖥️ EC2 Launch Template
-**場所**: `ec2/launch_template/`
-- セキュアなEC2インスタンス起動テンプレート
-- 監視エージェント統合（CloudWatch、Mackerel）
-- 自動化されたユーザーデータスクリプト
-- セキュリティグループとIAMロール管理
-- IMDSv2強制設定
+## 📦 主要モジュール
 
-#### ⚖️ Application Load Balancer (ALB)
-**場所**: `load_balancer/alb/`
-- 高性能なロードバランサー構成
-- ECS統合の実装例
-- SSL/TLS終端処理
-- ヘルスチェック設定
+### 🖥️ **EC2 Auto Scaling Group**
+**場所**: [`ec2/auto_scaling_group/`](./ec2/auto_scaling_group/)
 
-#### 📊 Athena Analytics
-**場所**: `analytics/athena/`
-- 複数タイプのログ（Django、Nginx、Error）の分析
-- パーティション射影による高速クエリ
-- 自動スケジュール実行のGlue Crawler
-- 事前定義されたクエリテンプレート
-- S3データの効率的な分析
+**2024年12月新機能:**
+- 🔄 **インスタンスリフレッシュ** - ゼロダウンタイムローリング更新
+- 📊 **高度なスケーリング** - ターゲット追跡・ステップスケーリング
+- 🏷️ **統合タグ戦略** - 環境・セキュリティ・運用タグ自動適用
+- 📉 **完全コスト最適化** - 0台スケールダウン対応
+- 🔔 **包括的アラーム** - 4種類のCloudWatchアラーム + SNS通知
+- 🔐 **セキュリティ強化** - KMS暗号化、入力バリデーション
+- 🧪 **自動テストスクリプト** - ワンクリック検証
 
-### 🛠️ 自動化ツール
+### 🚀 **EC2 Launch Template**
+**場所**: [`ec2/launch_template/`](./ec2/launch_template/)
 
-#### デプロイメントスクリプト
-- **`apply_with_confirmation.sh`** - AWS確認付きTerraform適用
-- **`plan_with_confirmation.sh`** - AWS確認付きTerraform計画
-- **`search_terraform_resources.sh`** - Terraformリソース検索・集計
+**特徴:**
+- 🐧 **Amazon Linux 2023 ECS最適化** - 最新のAMI自動選択
+- 📊 **統合監視** - CloudWatch Agent + Mackerel Agent
+- 🔒 **セキュリティ強化** - IMDSv2強制、EBS暗号化
+- 🛠️ **自動化ツール** - ctop、パフォーマンスツール自動インストール
+- 🎯 **ECS統合** - コンテナ実行環境の最適化
 
-#### リソース管理
-- **`create_terraform_resource_group.json`** - AWSリソースグループ設定
-- **`analytics/check_aws_account.sh`** - AWS認証情報確認
+### 🐳 **ECR Repository**
+**場所**: [`ecr/repository/`](./ecr/repository/)
+
+**機能:**
+- 📦 **単一・複数リポジトリ** - 柔軟な構成対応
+- 🔄 **ライフサイクルポリシー** - 自動イメージクリーンアップ
+- 🔍 **イメージスキャン** - 脆弱性検出とセキュリティ確認
+- 🔐 **暗号化設定** - AES256/KMS暗号化対応
+- 🌐 **クロスアカウント** - 複数アカウント間でのイメージ共有
+
+### 🔧 **ECS Cluster**
+**場所**: [`ecs/cluster/`](./ecs/cluster/)
+
+**機能:**
+- 🚀 **Fargate & EC2統合** - 複数のコンピューティングタイプ
+- 📊 **Container Insights** - 詳細なコンテナメトリクス
+- 🔧 **Execute Command** - コンテナへの安全なアクセス
+- ⚖️ **キャパシティプロバイダー** - コスト最適化とパフォーマンス
+
+### 🌐 **ECS Service**
+**場所**: [`ecs/service/`](./ecs/service/)
+
+**機能:**
+- 🔄 **タスク定義管理** - 完全なコンテナライフサイクル
+- 🔐 **IAM統合** - 自動的なロール・ポリシー作成
+- 📈 **Auto Scaling** - CPU/メモリベースの自動スケーリング
+- 🔗 **ロードバランサー統合** - ALB/NLB完全統合
+
+### ⚖️ **Application Load Balancer**
+**場所**: [`load_balancer/alb/`](./load_balancer/alb/)
+
+**機能:**
+- 🔐 **SSL/TLS終端** - 自動HTTPSリダイレクト
+- 🎯 **ECS統合** - IPベースターゲット群対応
+- 🔍 **ヘルスチェック** - 最適化されたECS用設定
+- 📊 **高可用性** - 複数AZ自動分散
+
+### 📊 **Athena Analytics**
+**場所**: [`analytics/athena/`](./analytics/athena/)
+
+**機能:**
+- 🔍 **複数ログタイプ分析** - Django、Nginx、Errorログ対応
+- 🚀 **パーティション射影** - 高速クエリ実行
+- 🔄 **Glue Crawler自動化** - スケジュール実行による自動スキーマ更新
+- 📋 **事前定義クエリ** - 即座に使用可能なクエリテンプレート
 
 ## 🚀 クイックスタート
 
-### 1. 前提条件の確認
+### 1. 📋 前提条件確認
 
 ```bash
-# 必要なツールの確認
-aws --version      # AWS CLI
-jq --version       # JSON processor
-terraform version  # Terraform 1.0+
+# 必要なツールのバージョン確認
+terraform version  # >= 1.0
+aws --version      # AWS CLI v2推奨
+jq --version       # JSONプロセッサー
 ```
 
-### 2. AWS認証情報の設定
+### 2. 🔑 AWS設定
 
 ```bash
-# AWS認証情報の設定
+# 認証情報設定
 aws configure
 
-# 現在のアカウント情報を確認
+# 現在のアカウント確認
 aws sts get-caller-identity
+
+# 必要な権限確認
+aws iam list-attached-user-policies --user-name $(aws sts get-caller-identity --query User.UserName --output text)
 ```
 
-### 3. Auto Scaling Group の基本的な使用方法
+### 3. 🛠️ 基本セットアップ
 
 ```bash
-# プロジェクトをクローン
+# プロジェクトクローン
 git clone <repository-url>
-cd teraform
+cd terraform
 
-# Auto Scaling Groupブランチに切り替え
-git checkout feature/ec2__auto_scaling_group
-
-# 設定ファイルを準備
-cd ec2/auto_scaling_group/terraform
+# 設定ファイル準備
 cp terraform.tfvars.example terraform.tfvars
-vi terraform.tfvars  # 設定を編集
+vi terraform.tfvars  # 環境に応じて編集
 
-# 自動テストスクリプトを使用（推奨）
-cd ec2/auto_scaling_group
-./test_module.sh validate   # 設定検証
-./test_module.sh plan       # 実行計画
-./test_module.sh apply      # リソース作成
-./test_module.sh check      # 状態確認
-./test_module.sh destroy    # リソース削除
+# 基本設定例
+cat > terraform.tfvars << EOF
+# 基本設定
+project_name = "myproject"
+environment  = "dev"
+app          = "web"
 
-# または従来の方法
-./plan_with_confirmation.sh
-./apply_with_confirmation.sh
-```
+# AWS設定
+aws_region = "ap-northeast-1"
 
-## 📋 Auto Scaling Group 詳細設定
-
-### 基本設定項目
-
-| 設定項目                    | 説明                   | デフォルト値           | 推奨値                   |
-| --------------------------- | ---------------------- | ---------------------- | ------------------------ |
-| `desired_capacity`          | 希望インスタンス数     | `2`                    | 本番: `2-4`, 開発: `1-2` |
-| `min_size`                  | 最小インスタンス数     | `0`                    | 本番: `2`, 開発: `1`     |
-| `max_size`                  | 最大インスタンス数     | `desired_capacity * 2` | 自動計算                 |
-| `health_check_grace_period` | ヘルスチェック猶予期間 | `300`                  | ALB使用時: `600`         |
-| `default_cooldown`          | デフォルトクールダウン | `300`                  | 高負荷時: `600`          |
-
-### スケーリングポリシー設定
-
-#### シンプルスケーリング
-```hcl
-# スケールアップ
-enable_scale_up_policy = true
-scale_up_adjustment = 1
-scale_up_cooldown = 300
-
-# スケールダウン
-enable_scale_down_policy = true
-scale_down_adjustment = -1
-scale_down_cooldown = 300
-```
-
-#### ターゲット追跡スケーリング
-```hcl
-target_tracking_target_value = 70.0
-target_tracking_metric_type = "ASGAverageCPUUtilization"
-target_tracking_scale_out_cooldown = 300
-target_tracking_scale_in_cooldown = 300
-```
-
-#### ステップスケーリング
-```hcl
-scale_up_policy_type = "StepScaling"
-scale_up_step_adjustments = [
-  {
-    scaling_adjustment          = 1
-    metric_interval_lower_bound = 0
-    metric_interval_upper_bound = 50
-  },
-  {
-    scaling_adjustment          = 2
-    metric_interval_lower_bound = 50
-    metric_interval_upper_bound = null
-  }
-]
-```
-
-### インスタンスリフレッシュ設定
-
-```hcl
-enable_instance_refresh = true
-instance_refresh_strategy = "Rolling"
-instance_refresh_min_healthy_percentage = 90
-instance_refresh_instance_warmup = 300
-instance_refresh_checkpoint_delay = 3600
-instance_refresh_checkpoint_percentages = [20, 50, 100]
-```
-
-### 高度なタグ管理
-
-#### 基本タグ（全リソース共通）
-```hcl
+# 共通タグ
 common_tags = {
-  Project     = "myapp"
-  Environment = "prod"
+  Project     = "myproject"
+  Environment = "dev"
+  Owner       = "team-name"
   ManagedBy   = "terraform"
-  Owner       = "DevOps"
-  CostCenter  = "engineering"
 }
+EOF
 ```
 
-#### 追加タグ（インスタンス固有）
-```hcl
-additional_tags = {
-  "Name" = {
-    value = "myapp-prod-web-instance"
-    propagate_at_launch = true
-  }
-  "Backup" = {
-    value = "daily"
-    propagate_at_launch = true
-  }
-  "Monitoring" = {
-    value = "detailed"
-    propagate_at_launch = true
-  }
-  "Schedule" = {
-    value = "business-hours"
-    propagate_at_launch = false
-  }
-}
-```
-
-## 🔧 設定戦略
-
-### 環境別推奨設定
-
-#### 本番環境 (prod)
-```hcl
-desired_capacity = 4
-min_size = 2
-enable_instance_refresh = true
-enable_notifications = true
-health_check_type = "ELB"
-health_check_grace_period = 600
-target_tracking_target_value = 70.0
-```
-
-#### ステージング環境 (stg)
-```hcl
-desired_capacity = 2
-min_size = 1
-enable_instance_refresh = true
-enable_notifications = true
-health_check_type = "ELB"
-health_check_grace_period = 300
-target_tracking_target_value = 80.0
-```
-
-#### 開発環境 (dev)
-```hcl
-desired_capacity = 1
-min_size = 0
-enable_instance_refresh = false
-enable_notifications = false
-health_check_type = "EC2"
-health_check_grace_period = 300
-```
-
-### セキュリティベストプラクティス
-
-1. **最小権限原則**: IAMロールとポリシーの最小権限設定
-2. **暗号化**: SNS通知のKMS暗号化
-3. **IMDSv2強制**: EC2メタデータサービスv2の強制使用
-4. **セキュリティグループ**: 必要最小限のポート開放
-5. **監査ログ**: CloudTrailとConfig連携
-
-### 監視・アラート戦略
-
-#### CloudWatchアラーム設定
-```hcl
-# CPU使用率監視
-enable_cpu_high_alarm = true
-cpu_high_threshold = 80
-cpu_high_evaluation_periods = 2
-
-enable_cpu_low_alarm = true
-cpu_low_threshold = 10
-cpu_low_evaluation_periods = 2
-
-# カスタムメトリクス
-enable_scale_up_alarm = true
-scale_up_alarm_metric_name = "CPUUtilization"
-scale_up_alarm_threshold = 75
-
-enable_scale_down_alarm = true
-scale_down_alarm_metric_name = "CPUUtilization"
-scale_down_alarm_threshold = 25
-```
-
-#### SNS通知設定
-```hcl
-enable_notifications = true
-notification_email_addresses = [
-  "devops@company.com",
-  "oncall@company.com"
-]
-notification_types = [
-  "autoscaling:EC2_INSTANCE_LAUNCH",
-  "autoscaling:EC2_INSTANCE_LAUNCH_ERROR",
-  "autoscaling:EC2_INSTANCE_TERMINATE",
-  "autoscaling:EC2_INSTANCE_TERMINATE_ERROR"
-]
-```
-
-## 🔍 リソース検索と管理
-
-### リソース検索スクリプト
+### 4. 🚀 確認付きデプロイメント（推奨）
 
 ```bash
-# 全てのTerraformリソースを検索
+# 確認付きプラン実行
+./plan_with_confirmation.sh
+
+# 確認付きデプロイメント
+./apply_with_confirmation.sh
+
+# リソース状態確認
+terraform state list
+```
+
+## 🔧 自動化ツール
+
+### 📋 デプロイメントスクリプト
+
+| スクリプト                      | 説明                      | 使用場面               |
+| ------------------------------- | ------------------------- | ---------------------- |
+| `plan_with_confirmation.sh`     | AWS確認付きプラン実行     | 変更内容の事前確認     |
+| `apply_with_confirmation.sh`    | AWS確認付きデプロイメント | 安全な本番デプロイ     |
+| `search_terraform_resources.sh` | リソース検索・集計        | 現在のリソース状況確認 |
+
+### 🔍 リソース管理
+
+```bash
+# リソース検索
 ./search_terraform_resources.sh
 
-# 特定のプロジェクトのリソースを検索
-./search_terraform_resources.sh myproject
+# 特定のリソースタイプ検索
+./search_terraform_resources.sh aws_instance
 
-# 特定のプロジェクトと環境のリソースを検索
-./search_terraform_resources.sh myproject prod
+# AWSアカウント確認
+./analytics/check_aws_account.sh
 ```
 
-### 出力内容
-- リソース一覧とタグ情報
-- リソースタイプ別集計
-- EC2インスタンス詳細
-- S3バケット詳細
-- Auto Scaling Group詳細
-- コスト追跡情報
+## 📊 設定管理
 
-## 🎯 運用のベストプラクティス
+### 🎯 基本設定パターン
 
-### 1. デプロイメント戦略
-- **Blue-Green デプロイ**: インスタンスリフレッシュ機能を活用
-- **カナリアリリース**: チェックポイント機能で段階的更新
-- **ロールバック**: 起動テンプレートのバージョン管理
+```hcl
+# 開発環境
+project_name = "myproject"
+environment  = "dev"
+app          = "web"
 
-### 2. 監視・運用
-- **ダッシュボード**: CloudWatchダッシュボードの自動作成
-- **アラート**: 段階的エスカレーション設定
-- **ログ分析**: Athenaを使用した詳細分析
+# 本番環境
+project_name = "myproject"
+environment  = "prod"
+app          = "api"
 
-### 3. コスト最適化
-- **スケジューリング**: 開発環境の自動停止
-- **インスタンスタイプ**: 混合インスタンス戦略
-- **スポットインスタンス**: コスト効率の向上
+# 共通タグ戦略
+common_tags = {
+  Project     = var.project_name
+  Environment = var.environment
+  Owner       = "team-name"
+  ManagedBy   = "terraform"
+  CostCenter  = "engineering"
+  Schedule    = "business-hours"
+}
+```
 
-### 4. セキュリティ
-- **定期的な更新**: インスタンスリフレッシュでのAMI更新
-- **脆弱性管理**: AWS Systems Managerとの連携
-- **アクセス制御**: IAMロールの定期的な見直し
+### 🏷️ タグ戦略
 
-## 🆘 トラブルシューティング
+**必須タグ（自動適用）:**
+- `Project` - プロジェクト識別子
+- `Environment` - 環境識別子（dev/stg/prod）
+- `ManagedBy` - 管理方法（terraform）
 
-### よくある問題と解決策
+**推奨タグ:**
+- `Owner` - 責任者・チーム名
+- `CostCenter` - コストセンター
+- `Schedule` - スケジュール（運用時間）
+- `BackupRequired` - バックアップ要否
 
-#### 1. インスタンスが起動しない
+詳細は[TERRAFORM-TAGS-STRATEGY.md](./TERRAFORM-TAGS-STRATEGY.md)参照
+
+## 🔐 セキュリティベストプラクティス
+
+### 🔒 IAM権限管理
+
+```hcl
+# 最小権限原則
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ec2:Describe*",
+        "ecs:Describe*",
+        "elasticloadbalancing:Describe*"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+```
+
+### 🔐 暗号化設定
+
+**保存時暗号化:**
+- EBS: デフォルトでAES256暗号化
+- S3: SSE-S3またはSSE-KMS
+- RDS: TDE（透過的データ暗号化）
+
+**転送時暗号化:**
+- ALB: HTTPS強制、HTTP→HTTPSリダイレクト
+- ECS: Service Connect TLS
+- ECR: プッシュ/プル時TLS
+
+### 🔑 シークレット管理
+
+```hcl
+# Parameter Store使用例
+resource "aws_ssm_parameter" "db_password" {
+  name  = "/${var.project_name}/${var.environment}/database/password"
+  type  = "SecureString"
+  value = var.db_password
+
+  tags = local.common_tags
+}
+
+# ECSタスクでの使用
+container_definitions = jsonencode([
+  {
+    name = "app"
+    secrets = [
+      {
+        name      = "DB_PASSWORD"
+        valueFrom = aws_ssm_parameter.db_password.arn
+      }
+    ]
+  }
+])
+```
+
+## 📈 運用・監視
+
+### 🔔 アラート設定
+
+```hcl
+# CloudWatch アラーム例
+resource "aws_cloudwatch_metric_alarm" "high_cpu" {
+  alarm_name          = "${var.project_name}-${var.environment}-high-cpu"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "2"
+  metric_name         = "CPUUtilization"
+  namespace           = "AWS/ECS"
+  period              = "300"
+  statistic           = "Average"
+  threshold           = "80"
+  alarm_description   = "This metric monitors ecs cpu utilization"
+
+  alarm_actions = [aws_sns_topic.alerts.arn]
+
+  dimensions = {
+    ServiceName = aws_ecs_service.main.name
+    ClusterName = aws_ecs_cluster.main.name
+  }
+}
+```
+
+### 📊 コスト最適化
+
+**スケーリング戦略:**
+- 開発環境: 0台スケールダウン対応
+- 本番環境: 最小2台で高可用性確保
+- Spot インスタンス: 開発・テスト環境で70%コスト削減
+
+**リソース管理:**
+- 未使用リソースの自動削除
+- ライフサイクルポリシーによるログ・イメージ管理
+- 夜間・週末の自動スケールダウン
+
+## 🔧 トラブルシューティング
+
+### 📋 よくある問題と解決方法
+
+| 問題                    | 原因             | 解決方法                   |
+| ----------------------- | ---------------- | -------------------------- |
+| `terraform plan` エラー | AWS認証情報不正  | `aws configure` で再設定   |
+| リソース作成失敗        | 権限不足         | IAMポリシー確認・追加      |
+| ECS タスク起動失敗      | リソース不足     | CPU/メモリ設定見直し       |
+| ALB ヘルスチェック失敗  | ポート設定間違い | ターゲットグループ設定確認 |
+
+### 🔍 デバッグ手順
+
 ```bash
-# 起動テンプレートの確認
-aws ec2 describe-launch-templates --launch-template-ids lt-12345678
+# 1. 基本情報確認
+terraform version
+aws sts get-caller-identity
 
-# セキュリティグループの確認
-aws ec2 describe-security-groups --group-ids sg-12345678
+# 2. 状態確認
+terraform state list
+terraform state show <resource_name>
+
+# 3. ログ確認
+terraform apply -auto-approve -refresh=true
+aws logs describe-log-groups --log-group-name-prefix /aws/ecs/
+
+# 4. リソース状況確認
+aws ecs describe-services --cluster <cluster_name> --services <service_name>
+aws application-autoscaling describe-scaling-policies
 ```
 
-#### 2. スケーリングが動作しない
-```bash
-# スケーリングポリシーの確認
-aws autoscaling describe-policies --auto-scaling-group-name myapp-prod-web-asg
+## 🎯 パフォーマンス最適化
 
-# CloudWatchアラームの確認
-aws cloudwatch describe-alarms --alarm-names myapp-prod-web-cpu-high
+### 📊 推奨設定
+
+| 環境         | インスタンスタイプ | 最小/最大台数 | CPU/メモリ |
+| ------------ | ------------------ | ------------- | ---------- |
+| 開発         | t3.micro           | 0/4           | 256/512    |
+| ステージング | t3.small           | 1/8           | 512/1024   |
+| 本番         | t3.medium以上      | 2/20          | 1024/2048  |
+
+### 🚀 CI/CD統合
+
+```yaml
+# GitHub Actions例
+name: Infrastructure Deploy
+on:
+  push:
+    branches: [main]
+    paths: ['terraform/**']
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: ">= 1.0"
+
+      - name: Terraform Plan
+        run: |
+          cd terraform
+          terraform init
+          terraform plan -out=tfplan
+
+      - name: Terraform Apply
+        run: |
+          cd terraform
+          terraform apply tfplan
 ```
 
-#### 3. インスタンスリフレッシュが失敗する
-```bash
-# リフレッシュ状況の確認
-aws autoscaling describe-instance-refreshes --auto-scaling-group-name myapp-prod-web-asg
-```
+## 🔗 関連リンク
 
-## 📚 関連ドキュメント
+- [Terraform公式ドキュメント](https://www.terraform.io/docs/)
+- [AWS Provider公式ドキュメント](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
+- [AWS Well-Architected Framework](https://aws.amazon.com/architecture/well-architected/)
+- [Terraform Best Practices](https://www.terraform-best-practices.com/)
 
-- [TERRAFORM-TAGS-STRATEGY.md](./TERRAFORM-TAGS-STRATEGY.md) - タグ戦略の詳細
-- [AWS Auto Scaling ユーザーガイド](https://docs.aws.amazon.com/autoscaling/ec2/userguide/)
-- [Terraform AWS Provider Documentation](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
+## 📝 ライセンス
 
-## 📞 サポート
+このプロジェクトは[MIT License](LICENSE)の下で提供されています。
 
-質問や問題がある場合は、以下の方法でお問い合わせください：
+## 🤝 コントリビューション
 
-- **Issues**: GitHubのIssueページ
-- **Email**: devops@company.com
-- **Chat**: Slack #infrastructure チャンネル
+プルリクエストやイシューの作成を歓迎します。詳細は[CONTRIBUTING.md](CONTRIBUTING.md)を参照してください。
 
 ---
 
-**最終更新**: 2024年12月 (feature/ec2__auto_scaling_group ブランチ)
-**Terraform Version**: >= 1.0
-**AWS Provider Version**: >= 5.0
+**最終更新**: 2024年12月
+**動作確認**: Terraform 1.0+, AWS Provider 5.x
+**メンテナンス**: 継続的な更新・改善を実施
