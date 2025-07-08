@@ -1,6 +1,26 @@
 # Integration tests for ALB Module
 # Tests with real AWS resources (requires valid credentials)
 
+# Variables for test environment configuration
+# These can be set via environment variables (TF_VAR_vpc_id, TF_VAR_subnet_ids, etc.)
+variable "vpc_id" {
+  description = "VPC ID for testing"
+  type        = string
+  default     = "vpc-12345678"
+}
+
+variable "subnet_ids" {
+  description = "Subnet IDs for testing"
+  type        = list(string)
+  default     = ["subnet-12345678", "subnet-87654321"]
+}
+
+variable "ssl_certificate_arn" {
+  description = "SSL certificate ARN for testing"
+  type        = string
+  default     = "arn:aws:acm:ap-northeast-1:123456789012:certificate/12345678-1234-1234-1234-123456789012"
+}
+
 # Test 1: Basic ALB integration with real AWS resources
 run "basic_alb_integration" {
   command = plan
@@ -8,9 +28,9 @@ run "basic_alb_integration" {
   variables {
     project_name        = "test"
     environment         = "dev"
-    vpc_id              = "vpc-12345678"
-    subnet_ids          = ["subnet-12345678", "subnet-87654321"]
-    ssl_certificate_arn = "arn:aws:acm:ap-northeast-1:123456789012:certificate/12345678-1234-1234-1234-123456789012"
+    vpc_id              = var.vpc_id
+    subnet_ids          = var.subnet_ids
+    ssl_certificate_arn = var.ssl_certificate_arn
     common_tags = {
       Project     = "test"
       Environment = "dev"
@@ -53,9 +73,9 @@ run "complex_alb_integration" {
     project_name        = "myapp"
     environment         = "prd"
     app                 = "api"
-    vpc_id              = "vpc-12345678"
-    subnet_ids          = ["subnet-12345678", "subnet-87654321"]
-    ssl_certificate_arn = "arn:aws:acm:ap-northeast-1:123456789012:certificate/12345678-1234-1234-1234-123456789012"
+    vpc_id              = var.vpc_id
+    subnet_ids          = var.subnet_ids
+    ssl_certificate_arn = var.ssl_certificate_arn
 
     # ALB configuration
     internal                         = false
@@ -201,9 +221,9 @@ run "internal_alb_integration" {
   variables {
     project_name        = "internal"
     environment         = "dev"
-    vpc_id              = "vpc-12345678"
-    subnet_ids          = ["subnet-12345678", "subnet-87654321"]
-    ssl_certificate_arn = "arn:aws:acm:ap-northeast-1:123456789012:certificate/12345678-1234-1234-1234-123456789012"
+    vpc_id              = var.vpc_id
+    subnet_ids          = var.subnet_ids
+    ssl_certificate_arn = var.ssl_certificate_arn
     internal            = true
     common_tags = {
       Project     = "internal"
@@ -241,9 +261,9 @@ run "https_target_group_integration" {
   variables {
     project_name        = "secure"
     environment         = "prd"
-    vpc_id              = "vpc-12345678"
-    subnet_ids          = ["subnet-12345678", "subnet-87654321"]
-    ssl_certificate_arn = "arn:aws:acm:ap-northeast-1:123456789012:certificate/12345678-1234-1234-1234-123456789012"
+    vpc_id              = var.vpc_id
+    subnet_ids          = var.subnet_ids
+    ssl_certificate_arn = var.ssl_certificate_arn
 
     # HTTPS target group
     target_group_port     = 443
@@ -287,9 +307,9 @@ run "lambda_target_type_integration" {
   variables {
     project_name        = "lambda"
     environment         = "dev"
-    vpc_id              = "vpc-12345678"
-    subnet_ids          = ["subnet-12345678", "subnet-87654321"]
-    ssl_certificate_arn = "arn:aws:acm:ap-northeast-1:123456789012:certificate/12345678-1234-1234-1234-123456789012"
+    vpc_id              = var.vpc_id
+    subnet_ids          = var.subnet_ids
+    ssl_certificate_arn = var.ssl_certificate_arn
 
     # Lambda target type
     target_type = "lambda"
@@ -315,9 +335,9 @@ run "custom_names_integration" {
   variables {
     project_name        = "custom"
     environment         = "dev"
-    vpc_id              = "vpc-12345678"
-    subnet_ids          = ["subnet-12345678", "subnet-87654321"]
-    ssl_certificate_arn = "arn:aws:acm:ap-northeast-1:123456789012:certificate/12345678-1234-1234-1234-123456789012"
+    vpc_id              = var.vpc_id
+    subnet_ids          = var.subnet_ids
+    ssl_certificate_arn = var.ssl_certificate_arn
 
     # Custom names
     alb_name          = "my-custom-alb"
@@ -354,9 +374,9 @@ run "additional_security_groups_integration" {
   variables {
     project_name        = "security"
     environment         = "dev"
-    vpc_id              = "vpc-12345678"
-    subnet_ids          = ["subnet-12345678", "subnet-87654321"]
-    ssl_certificate_arn = "arn:aws:acm:ap-northeast-1:123456789012:certificate/12345678-1234-1234-1234-123456789012"
+    vpc_id              = var.vpc_id
+    subnet_ids          = var.subnet_ids
+    ssl_certificate_arn = var.ssl_certificate_arn
 
     # Additional security groups
     additional_security_group_ids = ["sg-additional-1", "sg-additional-2"]
@@ -397,9 +417,9 @@ run "full_outputs_validation" {
   variables {
     project_name        = "output"
     environment         = "dev"
-    vpc_id              = "vpc-12345678"
-    subnet_ids          = ["subnet-12345678", "subnet-87654321"]
-    ssl_certificate_arn = "arn:aws:acm:ap-northeast-1:123456789012:certificate/12345678-1234-1234-1234-123456789012"
+    vpc_id              = var.vpc_id
+    subnet_ids          = var.subnet_ids
+    ssl_certificate_arn = var.ssl_certificate_arn
     common_tags = {
       Project     = "output"
       Environment = "dev"

@@ -65,22 +65,22 @@ run "basic_integration_test" {
 
   # 基本統合テストでのS3バケットパブリックアクセスブロック確認（セキュリティ重要）
   assert {
-    condition     = length(aws_s3_bucket_public_access_block.logs_bucket_pab) > 0 && aws_s3_bucket_public_access_block.logs_bucket_pab.block_public_acls == true
+    condition     = aws_s3_bucket_public_access_block.logs_bucket_pab.block_public_acls == true
     error_message = "Basic test S3 bucket public access should be blocked"
   }
 
   assert {
-    condition     = length(aws_s3_bucket_public_access_block.logs_bucket_pab) > 0 && aws_s3_bucket_public_access_block.logs_bucket_pab.block_public_policy == true
+    condition     = aws_s3_bucket_public_access_block.logs_bucket_pab.block_public_policy == true
     error_message = "Basic test S3 bucket public policy should be blocked"
   }
 
   assert {
-    condition     = length(aws_s3_bucket_public_access_block.logs_bucket_pab) > 0 && aws_s3_bucket_public_access_block.logs_bucket_pab.ignore_public_acls == true
+    condition     = aws_s3_bucket_public_access_block.logs_bucket_pab.ignore_public_acls == true
     error_message = "Basic test S3 bucket should ignore public ACLs"
   }
 
   assert {
-    condition     = length(aws_s3_bucket_public_access_block.logs_bucket_pab) > 0 && aws_s3_bucket_public_access_block.logs_bucket_pab.restrict_public_buckets == true
+    condition     = aws_s3_bucket_public_access_block.logs_bucket_pab.restrict_public_buckets == true
     error_message = "Basic test S3 bucket should restrict public buckets"
   }
 }
@@ -133,22 +133,22 @@ run "complete_feature_integration_test" {
 
   # S3バケットパブリックアクセスブロック確認（全設定）
   assert {
-    condition     = length(aws_s3_bucket_public_access_block.logs_bucket_pab) > 0 && aws_s3_bucket_public_access_block.logs_bucket_pab.block_public_acls == true
+    condition     = aws_s3_bucket_public_access_block.logs_bucket_pab.block_public_acls == true
     error_message = "S3 bucket public access should be blocked"
   }
 
   assert {
-    condition     = length(aws_s3_bucket_public_access_block.logs_bucket_pab) > 0 && aws_s3_bucket_public_access_block.logs_bucket_pab.block_public_policy == true
+    condition     = aws_s3_bucket_public_access_block.logs_bucket_pab.block_public_policy == true
     error_message = "S3 bucket public policy should be blocked"
   }
 
   assert {
-    condition     = length(aws_s3_bucket_public_access_block.logs_bucket_pab) > 0 && aws_s3_bucket_public_access_block.logs_bucket_pab.ignore_public_acls == true
+    condition     = aws_s3_bucket_public_access_block.logs_bucket_pab.ignore_public_acls == true
     error_message = "S3 bucket should ignore public ACLs"
   }
 
   assert {
-    condition     = length(aws_s3_bucket_public_access_block.logs_bucket_pab) > 0 && aws_s3_bucket_public_access_block.logs_bucket_pab.restrict_public_buckets == true
+    condition     = aws_s3_bucket_public_access_block.logs_bucket_pab.restrict_public_buckets == true
     error_message = "S3 bucket should restrict public buckets"
   }
 }
@@ -256,22 +256,22 @@ run "custom_log_types_integration_test" {
 
   # カスタムログタイプ環境のS3バケットパブリックアクセスブロック確認（セキュリティ重要）
   assert {
-    condition     = length(aws_s3_bucket_public_access_block.logs_bucket_pab) > 0 && aws_s3_bucket_public_access_block.logs_bucket_pab.block_public_acls == true
+    condition     = aws_s3_bucket_public_access_block.logs_bucket_pab.block_public_acls == true
     error_message = "Custom log types S3 bucket public access should be blocked"
   }
 
   assert {
-    condition     = length(aws_s3_bucket_public_access_block.logs_bucket_pab) > 0 && aws_s3_bucket_public_access_block.logs_bucket_pab.block_public_policy == true
+    condition     = aws_s3_bucket_public_access_block.logs_bucket_pab.block_public_policy == true
     error_message = "Custom log types S3 bucket public policy should be blocked"
   }
 
   assert {
-    condition     = length(aws_s3_bucket_public_access_block.logs_bucket_pab) > 0 && aws_s3_bucket_public_access_block.logs_bucket_pab.ignore_public_acls == true
+    condition     = aws_s3_bucket_public_access_block.logs_bucket_pab.ignore_public_acls == true
     error_message = "Custom log types S3 bucket should ignore public ACLs"
   }
 
   assert {
-    condition     = length(aws_s3_bucket_public_access_block.logs_bucket_pab) > 0 && aws_s3_bucket_public_access_block.logs_bucket_pab.restrict_public_buckets == true
+    condition     = aws_s3_bucket_public_access_block.logs_bucket_pab.restrict_public_buckets == true
     error_message = "Custom log types S3 bucket should restrict public buckets"
   }
 }
@@ -338,22 +338,22 @@ run "production_environment_integration_test" {
 
   # 本番環境のS3バケットパブリックアクセスブロック確認（セキュリティ重要）
   assert {
-    condition     = length(aws_s3_bucket_public_access_block.logs_bucket_pab) > 0 && aws_s3_bucket_public_access_block.logs_bucket_pab.block_public_acls == true
+    condition     = aws_s3_bucket_public_access_block.logs_bucket_pab.block_public_acls == true
     error_message = "Production S3 bucket public access should be blocked"
   }
 
   assert {
-    condition     = length(aws_s3_bucket_public_access_block.logs_bucket_pab) > 0 && aws_s3_bucket_public_access_block.logs_bucket_pab.block_public_policy == true
+    condition     = aws_s3_bucket_public_access_block.logs_bucket_pab.block_public_policy == true
     error_message = "Production S3 bucket public policy should be blocked"
   }
 
   assert {
-    condition     = length(aws_s3_bucket_public_access_block.logs_bucket_pab) > 0 && aws_s3_bucket_public_access_block.logs_bucket_pab.ignore_public_acls == true
+    condition     = aws_s3_bucket_public_access_block.logs_bucket_pab.ignore_public_acls == true
     error_message = "Production S3 bucket should ignore public ACLs"
   }
 
   assert {
-    condition     = length(aws_s3_bucket_public_access_block.logs_bucket_pab) > 0 && aws_s3_bucket_public_access_block.logs_bucket_pab.restrict_public_buckets == true
+    condition     = aws_s3_bucket_public_access_block.logs_bucket_pab.restrict_public_buckets == true
     error_message = "Production S3 bucket should restrict public buckets"
   }
 }

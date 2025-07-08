@@ -489,13 +489,13 @@ run "ami_name_filter_validation" {
   }
 
   assert {
-    condition     = data.aws_ami.amazon_linux.most_recent == true
-    error_message = "AMI should be the most recent version"
+    condition     = startswith(data.aws_ami.amazon_linux.name, "amzn2023")
+    error_message = "AMI name should start with amzn2023"
   }
 
   assert {
-    condition     = contains(data.aws_ami.amazon_linux.owners, "amazon")
-    error_message = "AMI should be owned by Amazon"
+    condition     = data.aws_ami.amazon_linux.owner_id == "137112412989"
+    error_message = "AMI should be owned by Amazon (owner_id: 137112412989)"
   }
 }
 
