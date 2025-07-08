@@ -51,7 +51,7 @@ run "basic_launch_template" {
   }
 
   assert {
-    condition     = aws_launch_template.main.vpc_security_group_ids == [aws_security_group.main.id]
+    condition     = setequals(aws_launch_template.main.vpc_security_group_ids, [aws_security_group.main.id])
     error_message = "Launch Template should use the created security group"
   }
 

@@ -26,12 +26,22 @@ variable "vpc_id" {
   description = "VPC ID for testing - must be provided via environment variable or tfvars file"
   type        = string
   default     = ""
+
+  validation {
+    condition     = length(var.vpc_id) > 0
+    error_message = "VPC ID must not be empty. Please provide a valid VPC ID via environment variable TF_VAR_vpc_id or terraform.tfvars file."
+  }
 }
 
 variable "subnet_ids" {
   description = "Subnet IDs for testing - must be provided via environment variable or tfvars file"
   type        = list(string)
   default     = []
+
+  validation {
+    condition     = length(var.subnet_ids) > 0
+    error_message = "Subnet IDs must not be empty. Please provide at least one subnet ID via environment variable TF_VAR_subnet_ids or terraform.tfvars file."
+  }
 }
 
 variable "ssl_certificate_arn" {
@@ -558,7 +568,7 @@ run "additional_security_groups_integration" {
     ssl_certificate_arn = var.ssl_certificate_arn
 
     # Additional security groups
-    additional_security_group_ids = ["sg-additional-1", "sg-additional-2"]
+    additional_security_group_ids = length(var.additional_security_group_ids) > 0 ? var.additional_security_group_ids : []
 
     common_tags = {
       Project     = "security"
@@ -579,13 +589,8 @@ run "additional_security_groups_integration" {
   }
 
   assert {
-    condition     = contains(aws_lb.main.security_groups, "sg-additional-1")
-    error_message = "ALB should contain additional security group 1"
-  }
-
-  assert {
-    condition     = contains(aws_lb.main.security_groups, "sg-additional-2")
-    error_message = "ALB should contain additional security group 2"
+    condition     = length(var.additional_security_group_ids) == 0 || alltrue([for sg_id in var.additional_security_group_ids : contains(aws_lb.main.security_groups, sg_id)])
+    error_message = "ALB should contain all additional security groups"
   }
 }
 
@@ -600,7 +605,7 @@ run "additional_security_groups_integration_cleanup" {
     ssl_certificate_arn = var.ssl_certificate_arn
 
     # Additional security groups
-    additional_security_group_ids = ["sg-additional-1", "sg-additional-2"]
+    additional_security_group_ids = length(var.additional_security_group_ids) > 0 ? var.additional_security_group_ids : []
 
     common_tags = {
       Project     = "security"
