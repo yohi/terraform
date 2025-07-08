@@ -29,7 +29,7 @@ module "ec2_launch_template" {
   volume_size   = 50
 
   # ECS設定
-  ecs_cluster_name = "myproject-prod-ecs"
+  ecs_cluster_name = "myproject-prd-ecs"
   iam_instance_profile_name = "ecsInstanceRole"
 
   # Mackerel設定

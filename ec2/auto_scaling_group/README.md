@@ -81,13 +81,13 @@ terraform apply
 
 ### スケーリング設定
 
-| 変数名                      | 説明                                                                            | デフォルト値 |
-| --------------------------- | ------------------------------------------------------------------------------- | ------------ |
-| `min_size`                  | 最小インスタンス数（0に設定することで完全なスケールダウンが可能）                | `0`          |
-| `desired_capacity`          | 希望インスタンス数（最大インスタンス数は2倍に自動設定）                          | `2`          |
-| `health_check_type`         | ヘルスチェックタイプ（EC2またはELB）                                            | `"EC2"`      |
-| `health_check_grace_period` | ヘルスチェック猶予期間（秒）                                                    | `300`        |
-| `default_cooldown`          | デフォルトクールダウン時間（秒）                                                | `300`        |
+| 変数名                      | 説明                                                              | デフォルト値 |
+| --------------------------- | ----------------------------------------------------------------- | ------------ |
+| `min_size`                  | 最小インスタンス数（0に設定することで完全なスケールダウンが可能） | `0`          |
+| `desired_capacity`          | 希望インスタンス数（最大インスタンス数は2倍に自動設定）           | `2`          |
+| `health_check_type`         | ヘルスチェックタイプ（EC2またはELB）                              | `"EC2"`      |
+| `health_check_grace_period` | ヘルスチェック猶予期間（秒）                                      | `300`        |
+| `default_cooldown`          | デフォルトクールダウン時間（秒）                                  | `300`        |
 
 ### ネットワーク設定
 
@@ -138,7 +138,7 @@ module "auto_scaling_group" {
 
   # 基本設定
   project = "my-webapp"
-  env     = "prod"
+  env     = "prd"
   app     = "frontend"
 
   # 起動テンプレート
@@ -168,7 +168,7 @@ module "auto_scaling_group" {
 
   # 共通タグ
   common_tags = {
-    Environment = "prod"
+    Environment = "prd"
     Service     = "frontend"
     CriticalityLevel = "high"
   }
@@ -226,7 +226,7 @@ module "auto_scaling_group_ha" {
 
   # 基本設定
   project = "mission-critical"
-  env     = "prod"
+  env     = "prd"
   app     = "core"
 
   # 起動テンプレート
@@ -276,7 +276,7 @@ module "auto_scaling_group_ha" {
   billing_code = "CRIT-2024-core"
 
   common_tags = {
-    Environment = "prod"
+    Environment = "prd"
     Service     = "core"
     CriticalityLevel = "critical"
     ComplianceScope = "pci"
@@ -292,7 +292,7 @@ module "auto_scaling_group_target_tracking" {
 
   # 基本設定
   project = "analytics"
-  env     = "prod"
+  env     = "prd"
 
   # 起動テンプレート
   launch_template_id = "lt-0123456789abcdef0"
@@ -321,7 +321,7 @@ module "auto_scaling_group_target_tracking" {
   cost_center  = "data-engineering"
 
   common_tags = {
-    Environment = "prod"
+    Environment = "prd"
     Service     = "analytics"
     WorkloadType = "batch"
   }
@@ -332,13 +332,13 @@ module "auto_scaling_group_target_tracking" {
 
 ### 1. 環境別設定の推奨値
 
-| 項目 | 開発環境 | ステージング環境 | 本番環境 |
-|------|----------|------------------|----------|
-| `min_size` | 0 | 1 | 2以上 |
-| `desired_capacity` | 1 | 2 | 4以上 |
-| `health_check_grace_period` | 300 | 300 | 600 |
-| `monitoring_level` | basic | detailed | detailed |
-| `backup_required` | false | true | true |
+| 項目                        | 開発環境 | ステージング環境 | 本番環境 |
+| --------------------------- | -------- | ---------------- | -------- |
+| `min_size`                  | 0        | 1                | 2以上    |
+| `desired_capacity`          | 1        | 2                | 4以上    |
+| `health_check_grace_period` | 300      | 300              | 600      |
+| `monitoring_level`          | basic    | detailed         | detailed |
+| `backup_required`           | false    | true             | true     |
 
 ### 2. セキュリティ設定
 
@@ -427,11 +427,11 @@ aws cloudwatch describe-alarms --alarm-names "your-alarm-name"
 
 ## 📝 変更履歴
 
-| 日付 | バージョン | 変更内容 |
-|------|------------|----------|
-| 2024-12 | 1.0.0 | 初回リリース |
-| 2024-12 | 1.1.0 | ターゲット追跡スケーリング対応 |
-| 2024-12 | 1.2.0 | 詳細なタグ戦略対応 |
+| 日付    | バージョン | 変更内容                       |
+| ------- | ---------- | ------------------------------ |
+| 2024-12 | 1.0.0      | 初回リリース                   |
+| 2024-12 | 1.1.0      | ターゲット追跡スケーリング対応 |
+| 2024-12 | 1.2.0      | 詳細なタグ戦略対応             |
 
 ## 出力値
 

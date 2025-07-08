@@ -60,7 +60,7 @@ variable "key_name" {
 variable "ssh_cidr_blocks" {
   description = "SSH接続を許可するCIDRブロックのリスト（セキュリティのため、明示的に信頼できるIPアドレス範囲を指定してください）"
   type        = list(string)
-  default     = []  # セキュリティのため、デフォルトは空リスト。必要に応じて特定のIPアドレス範囲を明示的に指定する
+  default     = [] # セキュリティのため、デフォルトは空リスト。必要に応じて特定のIPアドレス範囲を明示的に指定する
 }
 
 variable "associate_public_ip" {
@@ -140,12 +140,12 @@ variable "cloudwatch_cpu_metrics" {
   type = object({
     measurement                 = list(string)
     metrics_collection_interval = number
-    totalcpu                   = bool
+    totalcpu                    = bool
   })
   default = {
-    measurement = ["cpu_usage_idle", "cpu_usage_iowait", "cpu_usage_user", "cpu_usage_system"]
+    measurement                 = ["cpu_usage_idle", "cpu_usage_iowait", "cpu_usage_user", "cpu_usage_system"]
     metrics_collection_interval = 60
-    totalcpu = false
+    totalcpu                    = false
   }
 }
 
@@ -311,15 +311,6 @@ variable "parameter_store_kms_key_id" {
 # タグ設定
 # ==================================================
 
-variable "common_tags" {
-  description = "全リソースに適用する共通タグ"
-  type        = map(string)
-  default = {
-    Environment = var.environment
-    Project     = var.project_name
-    ManagedBy   = "terraform"
-  }
-
 variable "owner_team" {
   description = "リソースの所有者チーム"
   type        = string
@@ -352,6 +343,7 @@ variable "data_classification" {
   validation {
     condition     = contains(["public", "internal", "confidential", "restricted"], var.data_classification)
     error_message = "data_classification は 'public', 'internal', 'confidential', 'restricted' のいずれかである必要があります。"
+  }
 }
 
 variable "backup_required" {

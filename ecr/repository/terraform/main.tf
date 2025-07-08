@@ -39,7 +39,7 @@ locals {
         description  = "Keep last ${var.tagged_image_count_limit} tagged images"
         selection = {
           tagStatus     = "tagged"
-          tagPrefixList = ["v", "latest", "main", "master", "dev", "staging", "prd"]
+          tagPrefixList = ["v", "latest", "main", "master", "dev", "stg", "rls", "prd"]
           countType     = "imageCountMoreThan"
           countNumber   = var.tagged_image_count_limit
         }

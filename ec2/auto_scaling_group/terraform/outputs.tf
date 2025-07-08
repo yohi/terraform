@@ -321,7 +321,7 @@ output "cost_optimization_tips" {
       max_size         = var.desired_capacity * 2
     }
 
-    suggestions = var.environment == "prod" ? [
+    suggestions = var.environment == "prd" ? [
       "本番環境: スケジュールベースのスケーリングを検討してください",
       "本番環境: Spot インスタンスの混在使用を検討してください",
       "本番環境: 詳細監視でコストと性能のバランスを取ってください"

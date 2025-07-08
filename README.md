@@ -55,7 +55,7 @@ module "auto_scaling_group" {
 
   # 基本設定
   project           = "myapp"
-  env              = "prod"
+  env              = "prd"
   app              = "web"
   launch_template_id = "lt-12345678"
 
@@ -235,7 +235,7 @@ instance_refresh_checkpoint_percentages = [20, 50, 100]
 ```hcl
 common_tags = {
   Project     = "myapp"
-  Environment = "prod"
+  Environment = "prd"
   ManagedBy   = "terraform"
   Owner       = "DevOps"
   CostCenter  = "engineering"
@@ -246,7 +246,7 @@ common_tags = {
 ```hcl
 additional_tags = {
   "Name" = {
-    value = "myapp-prod-web-instance"
+    value = "myapp-prd-web-instance"
     propagate_at_launch = true
   }
   "Backup" = {
@@ -268,7 +268,7 @@ additional_tags = {
 
 ### 環境別推奨設定
 
-#### 本番環境 (prod)
+#### 本番環境 (prd)
 ```hcl
 desired_capacity = 4
 min_size = 2
@@ -358,7 +358,7 @@ notification_types = [
 ./search_terraform_resources.sh myproject
 
 # 特定のプロジェクトと環境のリソースを検索
-./search_terraform_resources.sh myproject prod
+./search_terraform_resources.sh myproject prd
 ```
 
 ### 出力内容
@@ -407,16 +407,16 @@ aws ec2 describe-security-groups --group-ids sg-12345678
 #### 2. スケーリングが動作しない
 ```bash
 # スケーリングポリシーの確認
-aws autoscaling describe-policies --auto-scaling-group-name myapp-prod-web-asg
+aws autoscaling describe-policies --auto-scaling-group-name myapp-prd-web-asg
 
 # CloudWatchアラームの確認
-aws cloudwatch describe-alarms --alarm-names myapp-prod-web-cpu-high
+aws cloudwatch describe-alarms --alarm-names myapp-prd-web-cpu-high
 ```
 
 #### 3. インスタンスリフレッシュが失敗する
 ```bash
 # リフレッシュ状況の確認
-aws autoscaling describe-instance-refreshes --auto-scaling-group-name myapp-prod-web-asg
+aws autoscaling describe-instance-refreshes --auto-scaling-group-name myapp-prd-web-asg
 ```
 
 ## 📚 関連ドキュメント
