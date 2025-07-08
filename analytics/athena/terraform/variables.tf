@@ -1,4 +1,4 @@
-# Required variables (no defaults) - order determines input sequence
+# 必須変数（デフォルト値なし）- 入力順序を決定
 variable "project_name" {
   description = "Project name (e.g., rcs, myapp)"
   type        = string
@@ -48,7 +48,7 @@ variable "logs_s3_prefix" {
   }
 }
 
-# Optional variables (with defaults)
+# オプション変数（デフォルト値あり）
 variable "aws_region" {
   description = "AWS region"
   type        = string
@@ -318,12 +318,12 @@ variable "crawler_max_concurrent_runs" {
   }
 }
 
-# Local values are defined in main.tf to avoid duplication
+# 重複を避けるためローカル値はmain.tfで定義
 
 # ==================================================
-# Validation Variables
+# 検証変数
 # ==================================================
-# These variables are used for native Terraform validation instead of external bash scripts
+# これらの変数は外部bashスクリプトの代わりにTerraform標準検証を使用
 
 variable "expected_aws_account_id" {
   description = "Expected AWS account ID for validation. If empty, account validation is skipped. This replaces the bash script validation for CI/CD environments."

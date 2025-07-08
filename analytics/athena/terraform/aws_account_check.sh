@@ -1,16 +1,16 @@
 #!/bin/bash
 
-# AWS Account Check Script for Terraform external data source
-# This script displays AWS account information and asks for user confirmation
+# Terraform 外部データソース用 AWS アカウントチェックスクリプト
+# このスクリプトは、AWS アカウント情報を表示し、ユーザーの確認を求めます
 
 set -euo pipefail
 
-# Configuration
+# 設定
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly LOG_FILE="${SCRIPT_DIR}/aws_account_check.log"
 readonly TIMEOUT_SECONDS=60
 
-# Logging function
+# ログ出力関数
 log_message() {
     local level=$1
     shift
@@ -19,7 +19,7 @@ log_message() {
     echo "[$timestamp] [$level] $message" >> "$LOG_FILE"
 }
 
-# Function to display AWS account information and get confirmation
+# AWS アカウント情報を表示し、確認を取得する関数
 aws_account_confirmation() {
     log_message "INFO" "Starting AWS account confirmation process"
 
@@ -30,14 +30,14 @@ aws_account_confirmation() {
     echo "" >&2
     echo "Current AWS Account Information:" >&2
 
-    # Check if AWS CLI is available
+    # AWS CLI が利用可能かチェック
     if ! command -v aws &> /dev/null; then
         log_message "ERROR" "AWS CLI not found"
         echo "❌ AWS CLI is not installed or not in PATH" >&2
         exit 1
     fi
 
-    # Get and display AWS account information with timeout
+    # タイムアウト付きで AWS アカウント情報を取得・表示
     local account_id user_id arn
     if ! account_id=$(timeout "$TIMEOUT_SECONDS" aws sts get-caller-identity --query 'Account' --output text 2>/dev/null); then
         log_message "ERROR" "Failed to get AWS account ID"
@@ -60,14 +60,14 @@ aws_account_confirmation() {
     echo "⚠️  Please verify this is the correct AWS account!" >&2
     echo "" >&2
 
-    # Check if confirmation is skipped via environment variable
+    # 環境変数による確認スキップをチェック
     if [ "${TERRAFORM_AWS_ACCOUNT_CONFIRMED:-}" = "true" ]; then
         log_message "INFO" "AWS account confirmation skipped via environment variable"
         echo "✅ AWS account confirmation skipped (TERRAFORM_AWS_ACCOUNT_CONFIRMED=true)" >&2
         return 0
     fi
 
-    # Check if running in non-interactive mode
+    # 非インタラクティブモードかチェック
     if [ ! -t 0 ] && [ ! -t 1 ]; then
         log_message "WARNING" "Running in non-interactive mode without confirmation"
         echo "⚠️  Running in non-interactive mode - proceeding without confirmation" >&2
@@ -75,11 +75,11 @@ aws_account_confirmation() {
         return 0
     fi
 
-    # Interactive confirmation prompt
+    # インタラクティブ確認プロンプト
     local confirmation
     echo -n "Do you want to proceed with this AWS account? (Y/N): " >&2
 
-    # Read with timeout to prevent hanging
+    # ハングアップを防ぐためタイムアウト付きで読み取り
     if read -r -t "$TIMEOUT_SECONDS" confirmation < /dev/tty 2>/dev/null || read -r confirmation; then
         case $confirmation in
             [Yy]|[Yy][Ee][Ss])
@@ -105,7 +105,7 @@ aws_account_confirmation() {
     fi
 }
 
-# Error handling function
+# エラーハンドリング関数
 handle_error() {
     local exit_code=$?
     local line_number=$1
@@ -114,17 +114,17 @@ handle_error() {
     exit $exit_code
 }
 
-# Set up error handling
+# エラーハンドリングを設定
 trap 'handle_error $LINENO' ERR
 
-# Main execution
+# メイン実行
 main() {
     log_message "INFO" "Script started"
 
-    # Show confirmation prompt
+    # 確認プロンプトを表示
     aws_account_confirmation
 
-    # Get account info for output
+    # 出力用アカウント情報を取得
     local account_id user_id arn
     account_id=$(aws sts get-caller-identity --query 'Account' --output text)
     user_id=$(aws sts get-caller-identity --query 'UserId' --output text)
@@ -132,7 +132,7 @@ main() {
 
     log_message "INFO" "Script completed successfully"
 
-    # Output JSON for Terraform external data source
+    # Terraform 外部データソース用 JSON を出力
     cat <<EOF
 {
     "account_id": "$account_id",
@@ -144,5 +144,5 @@ main() {
 EOF
 }
 
-# Call main function
+# メイン関数を呼び出し
 main "$@"

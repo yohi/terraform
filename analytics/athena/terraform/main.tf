@@ -1,41 +1,41 @@
-# Terraform configuration for Athena Analytics
-# Terraform and provider configuration moved to versions.tf
+# Athena Analytics用のTerraform設定
+# TerraformおよびProvider設定はversions.tfに移動済み
 
-# Get current AWS account information for validation
+# 検証用の現在のAWSアカウント情報を取得
 data "aws_caller_identity" "current" {}
 
-# AWS Region data
+# AWSリージョン情報
 data "aws_region" "current" {}
 
 # ==================================================
-# Terraform-native validation (replaces bash scripts)
+# Terraform標準の検証（bashスクリプトの代替）
 # ==================================================
 
-# AWS Account validation using native Terraform
+# Terraform標準を使ったAWSアカウント検証
 locals {
-  # Account validation check
+  # アカウント検証チェック
   current_account_id         = data.aws_caller_identity.current.account_id
   account_validation_enabled = var.expected_aws_account_id != ""
 
-  # Account validation with custom error message
+  # カスタムエラーメッセージ付きアカウント検証
   account_validation_check = var.expected_aws_account_id == "" ? true : (
     local.current_account_id == var.expected_aws_account_id
   )
 
-  # Custom validation error message
+  # カスタム検証エラーメッセージ
   _ = local.account_validation_enabled && !local.account_validation_check ? tobool("AWS Account validation failed. Expected: ${var.expected_aws_account_id}, Current: ${local.current_account_id}. Please verify you are using the correct AWS account.") : true
 }
 
-# S3 bucket existence check using native Terraform
+# Terraform標準を使ったS3バケット存在確認
 # 自動作成時のみ検証をスキップ - auto_create_bucket=trueの場合は検証不要
 data "aws_s3_bucket" "logs_bucket_check" {
   count  = (var.skip_bucket_validation || var.auto_create_bucket) ? 0 : 1
   bucket = var.logs_bucket_name
 
-  # This will fail if bucket doesn't exist, which is intentional for validation
+  # バケットが存在しない場合は失敗します（検証のための意図的な動作）
 }
 
-# S3 bucket logic consolidated into main locals block below
+# S3バケットロジックを以下のメインローカルブロックに統合
 
 # 既存のログバケットを参照（存在する場合）
 data "aws_s3_bucket" "existing_logs" {
@@ -196,7 +196,7 @@ resource "aws_s3_bucket_public_access_block" "logs_bucket_pab" {
   restrict_public_buckets = true
 }
 
-# Local values for consistent naming and tagging
+# 一貫した命名規則とタグ付けのためのローカル値
 locals {
   project_env = "${var.project_name}-${var.environment}"
   # プロジェクト、環境、アプリケーション名を組み合わせたデータベース名を使用
@@ -205,21 +205,21 @@ locals {
   athena_database_name  = var.athena_database_name != "" ? var.athena_database_name : local.default_database_name
 
   # ==================================================
-  # S3 bucket validation logic (replaces external bash scripts)
+  # S3バケット検証ロジック（外部bashスクリプトの代替）
   # ==================================================
-  # Determine if bucket exists (using try to handle case where data source is not created)
+  # バケットが存在するかどうかを判定（データソースが作成されない場合の処理にtryを使用）
   # auto_create_bucket=trueの場合は検証をスキップするため、bucket_existsの判定も調整
   bucket_exists = !(var.skip_bucket_validation || var.auto_create_bucket) && try(length(data.aws_s3_bucket.logs_bucket_check) > 0, false)
 
-  # Determine if we should create a new bucket
+  # 新しいバケットを作成するかどうかを判定
   # auto_create_bucket=true かつ skip_bucket_validation=false の場合のみ作成
   # skip_bucket_validation=true の場合は外部管理を想定
   should_create_bucket = !local.bucket_exists && var.auto_create_bucket && !var.skip_bucket_validation
 
-  # Validation: If require_bucket_exists is true, bucket must exist
+  # 検証：require_bucket_existsがtrueの場合、バケットが存在する必要があります
   bucket_requirement_check = var.require_bucket_exists ? local.bucket_exists : true
 
-  # Validation error if bucket is required but doesn't exist
+  # バケットが必要だが存在しない場合の検証エラー
   _bucket_validation = var.require_bucket_exists && !local.bucket_exists && !var.skip_bucket_validation ? tobool("S3 bucket '${var.logs_bucket_name}' is required but does not exist. Please create it first or set require_bucket_exists=false.") : true
 
   # ログ用バケットとAthena結果用バケットを同じにする
@@ -285,7 +285,7 @@ locals {
     var.tags
   )
 
-  # Account information for reference
+  # 参考のためのアカウント情報
   account_info = {
     account_id = data.aws_caller_identity.current.account_id
     user_id    = data.aws_caller_identity.current.user_id
@@ -293,7 +293,7 @@ locals {
     region     = data.aws_region.current.name
   }
 
-  # Sample query file mappings for each log type
+  # 各ログタイプのサンプルクエリファイルマッピング
   sample_query_files = {
     django_web = "django_web/django_recent_logs.sql"
     nginx_web  = "nginx_web/nginx_recent_logs.sql"
@@ -319,7 +319,7 @@ resource "aws_glue_catalog_database" "main" {
   tags = local.common_tags
 }
 
-# IAM role for Glue Crawler（index.html手順3に準拠）
+# Glue Crawler用のIAMロール（index.html手順3に準拠）
 resource "aws_iam_role" "glue_crawler_role" {
   name = "${local.project_env}-glue-crawler-role"
 
@@ -339,13 +339,13 @@ resource "aws_iam_role" "glue_crawler_role" {
   tags = local.common_tags
 }
 
-# IAM policy for Glue Crawler
+# Glue Crawler用のIAMポリシー
 resource "aws_iam_role_policy_attachment" "glue_crawler_service_role" {
   role       = aws_iam_role.glue_crawler_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole"
 }
 
-# IAM policy for Glue Crawler S3 access
+# Glue Crawler S3アクセス用のIAMポリシー
 resource "aws_iam_role_policy" "glue_crawler_s3_policy" {
   name = "${local.project_env}-glue-crawler-s3-policy"
   role = aws_iam_role.glue_crawler_role.id
@@ -424,10 +424,10 @@ resource "aws_glue_crawler" "log_crawlers" {
   })
 }
 
-# Note: AWS Athena uses AwsDataCatalog by default
-# Custom data source naming is managed through database and resource naming conventions
+# 注意：AWS AthenaはデフォルトでAwsDataCatalogを使用します
+# カスタムデータソースの命名はデータベースとリソースの命名規則で管理されます
 
-# Athena workgroup with enhanced configuration
+# 拡張設定でのAthenaワークグループ
 resource "aws_athena_workgroup" "main" {
   name = "${local.project_env}-analytics"
 
@@ -461,7 +461,7 @@ resource "aws_athena_workgroup" "main" {
 #   depends_on = [aws_athena_workgroup.main, aws_glue_catalog_database.main]
 # }
 
-# IAM role for Athena with least privilege principle
+# 最小特権の原則でのAthena用のIAMロール
 resource "aws_iam_role" "athena_role" {
   name = "${local.project_env}-athena-role"
 
@@ -481,7 +481,7 @@ resource "aws_iam_role" "athena_role" {
   tags = local.common_tags
 }
 
-# IAM policy for Athena to access S3 with least privilege
+# 最小特権でのAthena S3アクセス用のIAMポリシー
 resource "aws_iam_role_policy" "athena_s3_policy" {
   name = "${local.project_env}-athena-s3-policy"
   role = aws_iam_role.athena_role.id
@@ -647,8 +647,8 @@ resource "aws_iam_role_policy" "quicksight_policy" {
   })
 }
 
-# Athena named query for creating tables (one for each log type)
-# Only created when create_ddl_queries is true to avoid DDL in saved queries
+# テーブル作成用のAthena名前付きクエリ（各ログタイプ用）
+# 保存したクエリでDDLを避けるため、create_ddl_queriesがtrueの場合のみ作成
 resource "aws_athena_named_query" "create_table" {
   for_each = var.create_ddl_queries ? var.log_types : {}
 
@@ -670,7 +670,7 @@ resource "aws_athena_named_query" "create_table" {
   description = "${each.value.description}のテーブル作成 (${each.key})"
 }
 
-# Athena named query for adding partitions (one for each log type)
+# パーティション追加用のAthena名前付きクエリ（各ログタイプ用）
 # DISABLED: パーティション追加クエリは「保存したクエリ」に不要のため無効化
 # resource "aws_athena_named_query" "add_partitions" {
 #   for_each = var.log_types
@@ -692,7 +692,7 @@ resource "aws_athena_named_query" "create_table" {
 #   description = "${each.value.description}のパーティション追加 (${each.key})"
 # }
 
-# Athena named query for sample queries (one for each log type with dedicated template)
+# サンプルクエリ用のAthena名前付きクエリ（専用テンプレート付きの各ログタイプ用）
 resource "aws_athena_named_query" "sample_queries" {
   for_each = var.log_types
 
@@ -712,7 +712,7 @@ resource "aws_athena_named_query" "sample_queries" {
   description = "${each.value.description}のサンプルクエリ (${each.key})"
 }
 
-# Athena named query for all tables overview
+# 全テーブル概要用のAthena名前付きクエリ
 resource "aws_athena_named_query" "all_tables_overview" {
   name      = "${local.project_env}-all-tables-overview"
   database  = local.athena_database_name
@@ -724,7 +724,7 @@ resource "aws_athena_named_query" "all_tables_overview" {
 }
 
 # Athena View作成クエリ（index.html手順4bに準拠）
-# Only created when create_ddl_queries is true to avoid DDL in saved queries
+# 保存したクエリでDDLを避けるため、create_ddl_queriesがtrueの場合のみ作成
 resource "aws_athena_named_query" "create_views" {
   for_each = var.create_ddl_queries ? var.log_types : {}
 
@@ -745,7 +745,7 @@ resource "aws_athena_named_query" "create_views" {
   description = "${each.value.description}のビュー作成 (${each.key})"
 }
 
-# Athena named query for current day all data
+# 当日の全データ用のAthena名前付きクエリ
 resource "aws_athena_named_query" "current_day_all_data" {
   name      = "${local.project_env}-current-day-all-data"
   database  = local.athena_database_name

@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Terraform Apply with AWS Account Confirmation Script
-# This script displays AWS account information and asks for confirmation before running terraform apply
+# AWS アカウント確認付き Terraform Apply スクリプト
+# このスクリプトは、terraform apply を実行する前に AWS アカウント情報を表示し、確認を求めます
 
 set -euo pipefail
 
@@ -10,25 +10,25 @@ echo "=========================================="
 echo "🔍 AWS Account Information Validation"
 echo "=========================================="
 
-# Check if AWS CLI is configured
+# AWS CLI が設定されているかチェック
 if ! command -v aws &> /dev/null; then
     echo "❌ AWS CLI is not installed or not in PATH"
     exit 1
 fi
 
-# Check if jq is installed
+# jq がインストールされているかチェック
 if ! command -v jq &> /dev/null; then
     echo "❌ jq is not installed or not in PATH"
     exit 1
 fi
 
-# Check if terraform is installed
+# terraform がインストールされているかチェック
 if ! command -v terraform &> /dev/null; then
     echo "❌ terraform is not installed or not in PATH"
     exit 1
 fi
 
-# Get current AWS identity
+# 現在の AWS アイデンティティを取得
 echo "Getting current AWS identity..."
 aws_identity=$(aws sts get-caller-identity 2>/dev/null)
 
@@ -38,7 +38,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Extract information
+# 情報を抽出
 account_id=$(echo "$aws_identity" | jq -r '.Account')
 user_id=$(echo "$aws_identity" | jq -r '.UserId')
 arn=$(echo "$aws_identity" | jq -r '.Arn')
@@ -49,7 +49,7 @@ echo "  Account ID: $account_id"
 echo "  User ID:    $user_id"
 echo "  ARN:        $arn"
 
-# Try to get account name (if part of organization)
+# アカウント名を取得（組織の一部の場合）
 account_name=$(aws organizations describe-account --account-id "$account_id" --query 'Account.Name' --output text 2>/dev/null || echo "N/A")
 if [ "$account_name" != "N/A" ]; then
     echo "  Account Name: $account_name"
@@ -63,7 +63,7 @@ echo "⚠️  Please verify this is the correct AWS account!"
 echo "🚨 This will APPLY CHANGES to your AWS infrastructure!"
 echo ""
 
-# Ask for confirmation
+# 確認を求める
 while true; do
     read -p "Do you want to proceed with terraform apply? (Y/N): " -n 1 -r
     echo ""
@@ -88,7 +88,7 @@ while true; do
     esac
 done
 
-# Run terraform apply with all passed arguments
+# 渡されたすべての引数で terraform apply を実行
 echo "Executing: terraform apply $@"
 echo ""
 terraform apply "$@"

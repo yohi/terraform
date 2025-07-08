@@ -17,7 +17,7 @@ log "EC2 User Data Script started"
 # AWS基本設定
 # ==================================================
 
-# AWS DEFAULT REGION
+# AWS デフォルトリージョン設定
 export AWS_DEFAULT_REGION=${aws_region}
 log "AWS_DEFAULT_REGION set to: ${aws_region}"
 
@@ -28,7 +28,7 @@ log "AWS_DEFAULT_REGION set to: ${aws_region}"
 %{ if ecs_cluster_name != "" }
 log "Configuring ECS settings"
 
-# ECS CONFIG
+# ECS 設定
 echo ECS_CLUSTER=${ecs_cluster_name} >> /etc/ecs/ecs.config
 echo ECS_ENGINE_TASK_CLEANUP_WAIT_DURATION=3m >> /etc/ecs/ecs.config
 echo ECS_IMAGE_CLEANUP_INTERVAL=10m >> /etc/ecs/ecs.config
@@ -50,7 +50,7 @@ log "ECS configuration completed for cluster: ${ecs_cluster_name}"
 
 log "Installing monitoring tools"
 
-# CTOP INSTALL
+# CTOP インストール
 if ! command -v ctop &> /dev/null; then
     log "Installing ctop v${ctop_version}"
     sudo curl -Lo /usr/local/bin/ctop https://github.com/bcicen/ctop/releases/download/v${ctop_version}/ctop-${ctop_version}-linux-amd64
@@ -60,7 +60,7 @@ else
     log "ctop is already installed"
 fi
 
-# CloudWatchAgent INSTALL
+# CloudWatch Agent インストール
 if ! command -v amazon-cloudwatch-agent-ctl &> /dev/null; then
     log "Installing CloudWatch Agent"
     sudo yum install -y amazon-cloudwatch-agent

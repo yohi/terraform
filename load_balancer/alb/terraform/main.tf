@@ -4,9 +4,9 @@
 
 locals {
   # 命名規則: ${project}-${env}-${app}-{suffix} (${app}は省略可能)
-      alb_name = var.alb_name != "" ? var.alb_name : "${var.project_name}-${var.environment}${var.app != "" ? "-${var.app}" : ""}-alb"
-    target_group_name = var.target_group_name != "" ? var.target_group_name : "${var.project_name}-${var.environment}${var.app != "" ? "-${var.app}" : ""}-tg"
-    security_group_name = "${var.project_name}-${var.environment}${var.app != "" ? "-${var.app}" : ""}-alb-sg"
+  alb_name            = var.alb_name != "" ? var.alb_name : "${var.project_name}-${var.environment}${var.app != "" ? "-${var.app}" : ""}-alb"
+  target_group_name   = var.target_group_name != "" ? var.target_group_name : "${var.project_name}-${var.environment}${var.app != "" ? "-${var.app}" : ""}-tg"
+  security_group_name = "${var.project_name}-${var.environment}${var.app != "" ? "-${var.app}" : ""}-alb-sg"
 }
 
 # ==================================================
@@ -14,8 +14,8 @@ locals {
 # ==================================================
 
 resource "aws_security_group" "alb" {
-  name        = local.security_group_name
-  vpc_id      = var.vpc_id
+  name   = local.security_group_name
+  vpc_id = var.vpc_id
 
   # HTTP (80) - IPv4
   ingress {
@@ -66,7 +66,7 @@ resource "aws_security_group" "alb" {
 }
 
 # ==================================================
-# Application Load Balancer
+# アプリケーションロードバランサー
 # ==================================================
 
 resource "aws_lb" "main" {
@@ -109,7 +109,7 @@ resource "aws_lb_target_group" "main" {
   target_type = var.target_type
 
   # ECS用の設定
-  deregistration_delay = 30  # ECSタスクの停止時間を短縮
+  deregistration_delay = 30 # ECSタスクの停止時間を短縮
 
   health_check {
     enabled             = var.health_check_enabled
