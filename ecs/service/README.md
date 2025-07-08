@@ -282,15 +282,15 @@ module "ecs_service" {
 
 ### 🏷️ タグ設定
 
-| 変数名                   | 説明                                 | デフォルト値 |
-| ------------------------ | ------------------------------------ | ------------ |
-| `common_tags`            | すべてのリソースに適用される共通タグ | `{}`         |
-| `desired_count`          | 希望するタスク数                     | `number`     | `1`         |
-| `launch_type`            | 起動タイプ                           | `string`     | `"FARGATE"` |
-| `assign_public_ip`       | パブリックIP割り当て                 | `bool`       | `true`      |
-| `enable_auto_scaling`    | Auto Scaling有効化                   | `bool`       | `false`     |
-| `enable_logging`         | CloudWatchログ有効化                 | `bool`       | `true`      |
-| `enable_execute_command` | Execute Command有効化                | `bool`       | `true`      |
+| 変数名                   | 説明                                 | 型       | デフォルト値 |
+| ------------------------ | ------------------------------------ | -------- | ------------ |
+| `common_tags`            | すべてのリソースに適用される共通タグ | `map`    | `{}`         |
+| `desired_count`          | 希望するタスク数                     | `number` | `1`          |
+| `launch_type`            | 起動タイプ                           | `string` | `"FARGATE"`  |
+| `assign_public_ip`       | パブリックIP割り当て                 | `bool`   | `true`       |
+| `enable_auto_scaling`    | Auto Scaling有効化                   | `bool`   | `false`      |
+| `enable_logging`         | CloudWatchログ有効化                 | `bool`   | `true`       |
+| `enable_execute_command` | Execute Command有効化                | `bool`   | `true`       |
 
 詳細な変数については `variables.tf` を参照してください。
 
