@@ -144,7 +144,7 @@ run "complex_alb_integration" {
   }
 
   assert {
-    condition     = aws_lb_target_group.main.health_check[0].port == 8080
+    condition     = aws_lb_target_group.main.health_check[0].port == "8080"
     error_message = "Health check port should be 8080"
   }
 
@@ -275,7 +275,7 @@ run "https_target_group_integration" {
   }
 
   assert {
-    condition     = aws_lb_target_group.main.health_check[0].port == 443
+    condition     = aws_lb_target_group.main.health_check[0].port == "443"
     error_message = "Health check port should be 443"
   }
 }

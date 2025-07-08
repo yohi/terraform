@@ -600,7 +600,7 @@ run "mock_production_settings" {
   }
 
   assert {
-    condition     = aws_launch_template.main.name == "test-dev-launch-template"
+    condition     = aws_launch_template.main.name == "test-prd-launch-template"
     error_message = "Launch Template name should match mock value"
   }
 
