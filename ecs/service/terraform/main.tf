@@ -321,17 +321,12 @@ resource "aws_ecs_service" "main" {
 
   health_check_grace_period_seconds = var.target_group_arn != "" ? var.health_check_grace_period_seconds : null
 
-  deployment_configuration {
-    maximum_percent         = var.deployment_maximum_percent
-    minimum_healthy_percent = var.deployment_minimum_healthy_percent
-  }
+  deployment_maximum_percent         = var.deployment_maximum_percent
+  deployment_minimum_healthy_percent = var.deployment_minimum_healthy_percent
 
-  dynamic "deployment_circuit_breaker" {
-    for_each = var.enable_deployment_circuit_breaker ? [1] : []
-    content {
-      enable   = var.enable_deployment_circuit_breaker
-      rollback = var.deployment_circuit_breaker_rollback
-    }
+  deployment_circuit_breaker {
+    enable   = var.enable_deployment_circuit_breaker
+    rollback = var.deployment_circuit_breaker_rollback
   }
 
   tags = merge(

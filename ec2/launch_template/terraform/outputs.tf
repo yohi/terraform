@@ -49,6 +49,7 @@ output "security_group_name" {
 # Parameter Store Parameter Names
 output "parameter_store_names" {
   description = "作成されたParameter Storeパラメータ名のリスト"
+  sensitive   = true
   value = compact([
     var.create_parameter_store && local.effective_mackerel_api_key != "" ? aws_ssm_parameter.mackerel_api_key[0].name : "",
     var.create_parameter_store && local.effective_mackerel_display_name != "" ? aws_ssm_parameter.mackerel_display_name[0].name : "",
@@ -68,11 +69,12 @@ output "mackerel_parameter_prefix" {
 
 output "effective_mackerel_settings" {
   description = "実際に使用されるMackerel設定"
+  sensitive   = true
   value = {
-    api_key      = local.effective_mackerel_api_key != "" ? "***設定済み***" : "未設定"
-    display_name = local.effective_mackerel_display_name
-    roles        = local.effective_mackerel_roles
-    has_config   = local.final_mackerel_config != "" ? true : false
+    api_key       = local.effective_mackerel_api_key != "" ? "***設定済み***" : "未設定"
+    display_name  = local.effective_mackerel_display_name
+    roles         = local.effective_mackerel_roles
+    has_config    = local.final_mackerel_config != "" ? true : false
     has_sysconfig = local.final_mackerel_sysconfig != "" ? true : false
   }
 }
@@ -80,9 +82,9 @@ output "effective_mackerel_settings" {
 output "effective_cloudwatch_settings" {
   description = "実際に使用されるCloudWatch Agent設定"
   value = {
-    namespace               = local.effective_cloudwatch_namespace
-    collection_interval     = var.cloudwatch_metrics_collection_interval
-    has_config             = local.final_cloudwatch_config != "" ? true : false
-    parameter_name         = var.cloudwatch_agent_config != "" ? var.cloudwatch_agent_config : "AmazonCloudWatch-Agent_${var.project_name}-${var.environment}-ecs"
+    namespace           = local.effective_cloudwatch_namespace
+    collection_interval = var.cloudwatch_metrics_collection_interval
+    has_config          = local.final_cloudwatch_config != "" ? true : false
+    parameter_name      = var.cloudwatch_agent_config != "" ? var.cloudwatch_agent_config : "AmazonCloudWatch-Agent_${var.project_name}-${var.environment}-ecs"
   }
 }

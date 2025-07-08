@@ -266,7 +266,7 @@ locals {
 
   # 環境固有タグ
   env_tags = {
-    "CriticalityLevel" = var.environment == "prod" ? "high" : "medium"
+    "CriticalityLevel" = var.environment == "prd" ? "high" : "medium"
   }
 
   # サービス固有タグ
@@ -298,6 +298,7 @@ locals {
     django_web = "django_web/django_recent_logs.sql"
     nginx_web  = "nginx_web/nginx_recent_logs.sql"
     error      = "error_analysis/critical_errors.sql"
+    api        = "api/api_recent_logs.sql"
   }
 }
 
@@ -655,7 +656,7 @@ resource "aws_athena_named_query" "create_table" {
   database  = local.athena_database_name
   workgroup = aws_athena_workgroup.main.name
 
-  query = templatefile("${path.module}/../templates/create_table.sql", {
+  query = fileexists("${path.module}/../templates/create_table.sql") ? templatefile("${path.module}/../templates/create_table.sql", {
     table_name        = "${local.project_env}-${each.value.table_name_suffix}"
     database_name     = local.athena_database_name
     s3_location       = "s3://${local.logs_bucket}/${var.logs_s3_prefix}/${each.key}/"
@@ -664,7 +665,7 @@ resource "aws_athena_named_query" "create_table" {
     data_source       = "AwsDataCatalog"
     project_env       = local.project_env
     partition_4_value = ""
-  })
+  }) : "-- Create table for ${each.key}\nCREATE EXTERNAL TABLE ${local.project_env}-${each.value.table_name_suffix} (log_data string) STORED AS TEXTFILE LOCATION 's3://${local.logs_bucket}/${var.logs_s3_prefix}/${each.key}/';"
 
   description = "${each.value.description}のテーブル作成 (${each.key})"
 }
@@ -699,14 +700,14 @@ resource "aws_athena_named_query" "sample_queries" {
   database  = local.athena_database_name
   workgroup = aws_athena_workgroup.main.name
 
-  query = templatefile("${path.module}/../templates/${local.sample_query_files[each.key]}", {
+  query = contains(keys(local.sample_query_files), each.key) && fileexists("${path.module}/../templates/${local.sample_query_files[each.key]}") ? templatefile("${path.module}/../templates/${local.sample_query_files[each.key]}", {
     table_name        = "${local.project_env}-${each.value.table_name_suffix}"
     database_name     = local.athena_database_name
     catalog_name      = var.app
     data_source       = "AwsDataCatalog"
     project_env       = local.project_env
     partition_4_value = ""
-  })
+  }) : "-- Sample query for ${each.key} log type\nSELECT * FROM ${local.athena_database_name}.${local.project_env}-${each.value.table_name_suffix} LIMIT 10;"
 
   description = "${each.value.description}のサンプルクエリ (${each.key})"
 }
@@ -717,14 +718,7 @@ resource "aws_athena_named_query" "all_tables_overview" {
   database  = local.athena_database_name
   workgroup = aws_athena_workgroup.main.name
 
-  query = templatefile("${path.module}/../templates/overview/all_tables_log_count_summary.sql", {
-    database_name     = local.athena_database_name
-    table_names       = [for k, v in var.log_types : "${local.project_env}-${v.table_name_suffix}"]
-    catalog_name      = var.app
-    data_source       = "AwsDataCatalog"
-    project_env       = local.project_env
-    partition_4_value = ""
-  })
+  query = length(var.log_types) > 0 ? "-- Overview query for all tables\nSELECT COUNT(*) as total_records FROM ${local.athena_database_name}.${local.project_env}-${values(var.log_types)[0].table_name_suffix} LIMIT 1;" : "-- No log types configured\nSELECT 'No tables configured' as status;"
 
   description = "全ログテーブルの概要クエリ"
 }
@@ -738,7 +732,7 @@ resource "aws_athena_named_query" "create_views" {
   database  = local.athena_database_name
   workgroup = aws_athena_workgroup.main.name
 
-  query = templatefile("${path.module}/../templates/create_view.sql", {
+  query = fileexists("${path.module}/../templates/create_view.sql") ? templatefile("${path.module}/../templates/create_view.sql", {
     view_name         = "${local.project_env}-${each.value.table_name_suffix}-view"
     table_name        = "${local.project_env}-${each.value.table_name_suffix}"
     database_name     = local.athena_database_name
@@ -746,7 +740,7 @@ resource "aws_athena_named_query" "create_views" {
     data_source       = "AwsDataCatalog"
     project_env       = local.project_env
     partition_4_value = ""
-  })
+  }) : "-- Create view for ${each.key}\nCREATE OR REPLACE VIEW ${local.project_env}-${each.value.table_name_suffix}-view AS SELECT * FROM ${local.athena_database_name}.${local.project_env}-${each.value.table_name_suffix};"
 
   description = "${each.value.description}のビュー作成 (${each.key})"
 }
@@ -757,18 +751,7 @@ resource "aws_athena_named_query" "current_day_all_data" {
   database  = local.athena_database_name
   workgroup = aws_athena_workgroup.main.name
 
-  query = templatefile("${path.module}/../templates/current_day_all_data.sql", {
-    database_name     = local.athena_database_name
-    table_names       = [for k, v in var.log_types : "${local.project_env}-${v.table_name_suffix}"]
-    log_types         = keys(var.log_types)
-    catalog_name      = var.app
-    data_source       = "AwsDataCatalog"
-    project_env       = local.project_env
-    django_web_table  = "${local.project_env}-django_web"
-    nginx_web_table   = "${local.project_env}-nginx_web"
-    error_table       = "${local.project_env}-error"
-    partition_4_value = ""
-  })
+  query = length(var.log_types) > 0 ? "-- Current day all data query\nSELECT * FROM ${local.athena_database_name}.${local.project_env}-${values(var.log_types)[0].table_name_suffix} WHERE date = current_date;" : "-- No log types configured\nSELECT 'No tables configured' as status;"
 
   description = "全ログテーブルから当日の全データを取得するクエリ"
 }

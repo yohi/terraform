@@ -37,7 +37,7 @@ variable "project_name" {
 }
 
 variable "environment" {
-  description = "環境名 (dev, stg, prod)"
+  description = "環境名 (dev, stg, rls, prd)"
   type        = string
 
   validation {
@@ -46,8 +46,8 @@ variable "environment" {
   }
 
   validation {
-    condition     = contains(["dev", "stg", "prod"], var.environment)
-    error_message = "環境名は 'dev', 'stg', 'prod' のいずれかである必要があります。"
+    condition     = contains(["dev", "stg", "rls", "prd"], var.environment)
+    error_message = "環境名は 'dev', 'stg', 'rls', 'prd' のいずれかである必要があります。"
   }
 }
 
