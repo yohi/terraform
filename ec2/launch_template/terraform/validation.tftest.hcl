@@ -159,6 +159,11 @@ run "volume_size_minimum" {
     condition     = aws_launch_template.main.block_device_mappings[0].ebs[0].volume_size == 8
     error_message = "Volume size 8 GB should be valid"
   }
+
+  assert {
+    condition     = aws_launch_template.main.block_device_mappings[0].ebs[0].encrypted == true
+    error_message = "EBS encryption must be enabled for security compliance"
+  }
 }
 
 run "volume_size_standard" {
@@ -556,7 +561,7 @@ run "iam_instance_profile_empty" {
   }
 
   assert {
-    condition     = length(aws_launch_template.main.iam_instance_profile) == 0
+    condition     = aws_launch_template.main.iam_instance_profile == null || aws_launch_template.main.iam_instance_profile == []
     error_message = "IAM instance profile should not be set when empty"
   }
 }

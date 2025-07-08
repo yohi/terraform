@@ -486,8 +486,8 @@ run "aws_account_validation_integration_test" {
 
   # AWS Account ID厳密比較
   assert {
-    condition     = data.aws_caller_identity.current.account_id == expected_aws_account_id
-    error_message = "AWS account ID does not match expected account ID. Expected: ${expected_aws_account_id}, Actual: ${data.aws_caller_identity.current.account_id}"
+    condition     = data.aws_caller_identity.current.account_id == var.expected_aws_account_id
+    error_message = "AWS account ID does not match expected account ID. Expected: ${var.expected_aws_account_id}, Actual: ${data.aws_caller_identity.current.account_id}"
   }
 
   # データソース確認
@@ -506,7 +506,7 @@ run "resource_naming_convention_integration_test" {
     environment        = "stg"
     app                = "log-analytics"
     logs_bucket_name   = "my-project-stg-log-analytics-logs"
-    logs_s3_prefix     = "staging/logs"
+    logs_s3_prefix     = "stg/logs"
     auto_create_bucket = true
   }
 

@@ -9,7 +9,7 @@ aws_region = "ap-northeast-1"
 project = "my-webapp"
 
 # 環境名（dev, stg, prodなど）
-env = "prod"
+env = "prd"
 
 # アプリケーション名（オプション）
 app = "frontend"
@@ -224,7 +224,7 @@ schedule = "24x7"  # 24x7, business-hours, custom
 
 # 共通タグ（すべてのリソースに適用）
 common_tags = {
-  Environment = "prod"
+  Environment = "prd"
   Service     = "frontend"
   Team        = "DevOps"
   CostCenter  = "engineering"
@@ -235,7 +235,7 @@ common_tags = {
 # 追加タグ（インスタンスにプロパゲートするかどうかを指定）
 additional_tags = {
   "Name" = {
-    value = "my-webapp-prod-frontend"
+    value = "my-webapp-prd-frontend"
     propagate_at_launch = true
   }
   "Backup" = {

@@ -336,7 +336,7 @@ run "production_environment_settings" {
   command = plan
 
   variables {
-    project_name        = "prod-app"
+    project_name        = "prd-app"
     environment         = "prd"
     app                 = "webapp"
     instance_type       = "t3.medium"

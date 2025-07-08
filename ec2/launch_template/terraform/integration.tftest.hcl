@@ -86,17 +86,17 @@ run "production_integration" {
   command = apply_and_destroy
 
   variables {
-    project_name                 = "test-prod-integration"
+    project_name                 = "test-prd-integration"
     environment                  = "prd"
-    app                          = "prod-app"
+    app                          = "prd-app"
     instance_type                = "t3.small"
     volume_size                  = 30
     volume_type                  = "gp3"
-    ecs_cluster_name             = "test-prod-integration-ecs"
-    mackerel_api_key             = "prod-dummy-api-key"
-    mackerel_organization        = "prod-org"
-    mackerel_roles               = "prod,web"
-    cloudwatch_default_namespace = "Prod/Test"
+    ecs_cluster_name             = "test-prd-integration-ecs"
+    mackerel_api_key             = "prd-dummy-api-key"
+    mackerel_organization        = "prd-org"
+    mackerel_roles               = "prd,web"
+    cloudwatch_default_namespace = "Prd/Test"
     create_parameter_store       = true
     owner_team                   = "platform"
     owner_email                  = "platform@example.com"
@@ -106,7 +106,7 @@ run "production_integration" {
   }
 
   assert {
-    condition     = aws_launch_template.main.name == "test-prod-integration-prd-launch-template"
+    condition     = aws_launch_template.main.name == "test-prd-integration-prd-launch-template"
     error_message = "Production Launch Template should be created"
   }
 
@@ -167,12 +167,12 @@ run "custom_configuration_integration" {
     ecs_cluster_name                       = "test-custom-ecs"
     mackerel_api_key                       = "custom-api-key"
     mackerel_organization                  = "custom-org"
-    mackerel_roles                         = "custom,staging"
+    mackerel_roles                         = "custom,stg"
     mackerel_parameter_prefix              = "/custom/prefix/mackerel/"
-    cloudwatch_default_namespace           = "Custom/Staging"
+    cloudwatch_default_namespace           = "Custom/Stg"
     cloudwatch_metrics_collection_interval = 30
     create_parameter_store                 = true
-    custom_user_data                       = "#!/bin/bash\necho 'Custom staging setup'"
+    custom_user_data                       = "#!/bin/bash\necho 'Custom stg setup'"
   }
 
   assert {
@@ -201,7 +201,7 @@ run "custom_configuration_integration" {
   }
 
   assert {
-    condition     = contains(aws_launch_template.main.user_data, "Custom staging setup")
+    condition     = contains(aws_launch_template.main.user_data, "Custom stg setup")
     error_message = "Custom Launch Template should contain custom user data"
   }
 

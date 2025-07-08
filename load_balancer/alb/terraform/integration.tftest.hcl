@@ -23,7 +23,7 @@ variable "ssl_certificate_arn" {
 
 # Test 1: Basic ALB integration with real AWS resources
 run "basic_alb_integration" {
-  command = plan
+  command = apply
 
   variables {
     project_name        = "test"
@@ -65,9 +65,27 @@ run "basic_alb_integration" {
   }
 }
 
+run "basic_alb_integration_cleanup" {
+  command = destroy
+
+  variables {
+    project_name        = "test"
+    environment         = "dev"
+    vpc_id              = var.vpc_id
+    subnet_ids          = var.subnet_ids
+    ssl_certificate_arn = var.ssl_certificate_arn
+    common_tags = {
+      Project     = "test"
+      Environment = "dev"
+      ManagedBy   = "terraform"
+      TestType    = "integration"
+    }
+  }
+}
+
 # Test 2: ALB with complex configuration
 run "complex_alb_integration" {
-  command = plan
+  command = apply
 
   variables {
     project_name        = "myapp"
@@ -214,9 +232,62 @@ run "complex_alb_integration" {
   }
 }
 
+run "complex_alb_integration_cleanup" {
+  command = destroy
+
+  variables {
+    project_name        = "myapp"
+    environment         = "prd"
+    app                 = "api"
+    vpc_id              = var.vpc_id
+    subnet_ids          = var.subnet_ids
+    ssl_certificate_arn = var.ssl_certificate_arn
+
+    # ALB configuration
+    internal                         = false
+    enable_deletion_protection       = true
+    idle_timeout                     = 300
+    enable_cross_zone_load_balancing = true
+    enable_http2                     = true
+    ip_address_type                  = "dualstack"
+
+    # Target group configuration
+    target_group_port     = 8080
+    target_group_protocol = "HTTP"
+    target_type           = "ip"
+
+    # Health check configuration
+    health_check_enabled             = true
+    health_check_path                = "/health"
+    health_check_port                = "8080"
+    health_check_protocol            = "HTTP"
+    health_check_healthy_threshold   = 3
+    health_check_unhealthy_threshold = 5
+    health_check_timeout             = 10
+    health_check_interval            = 15
+    health_check_matcher             = "200,201"
+
+    # SSL configuration
+    ssl_policy = "ELBSecurityPolicy-TLS-1-2-Ext-2018-06"
+
+    # Access logs
+    enable_access_logs = true
+    access_logs_bucket = "myapp-alb-logs"
+    access_logs_prefix = "prd-api"
+
+    common_tags = {
+      Project     = "myapp"
+      Environment = "prd"
+      Application = "api"
+      ManagedBy   = "terraform"
+      TestType    = "integration"
+    }
+  }
+}
+
 # Test 3: Internal ALB integration
 run "internal_alb_integration" {
-  command = plan
+  command = apply
 
   variables {
     project_name        = "internal"
@@ -254,9 +325,28 @@ run "internal_alb_integration" {
   }
 }
 
+run "internal_alb_integration_cleanup" {
+  command = destroy
+
+  variables {
+    project_name        = "internal"
+    environment         = "dev"
+    vpc_id              = var.vpc_id
+    subnet_ids          = var.subnet_ids
+    ssl_certificate_arn = var.ssl_certificate_arn
+    internal            = true
+    common_tags = {
+      Project     = "internal"
+      Environment = "dev"
+      ManagedBy   = "terraform"
+      TestType    = "integration"
+    }
+  }
+}
+
 # Test 4: ALB with HTTPS target group
 run "https_target_group_integration" {
-  command = plan
+  command = apply
 
   variables {
     project_name        = "secure"
@@ -300,9 +390,34 @@ run "https_target_group_integration" {
   }
 }
 
+run "https_target_group_integration_cleanup" {
+  command = destroy
+
+  variables {
+    project_name        = "secure"
+    environment         = "prd"
+    vpc_id              = var.vpc_id
+    subnet_ids          = var.subnet_ids
+    ssl_certificate_arn = var.ssl_certificate_arn
+
+    # HTTPS target group
+    target_group_port     = 443
+    target_group_protocol = "HTTPS"
+    health_check_protocol = "HTTPS"
+    health_check_port     = "443"
+
+    common_tags = {
+      Project     = "secure"
+      Environment = "prd"
+      ManagedBy   = "terraform"
+      TestType    = "integration"
+    }
+  }
+}
+
 # Test 5: ALB with Lambda target type
 run "lambda_target_type_integration" {
-  command = plan
+  command = apply
 
   variables {
     project_name        = "lambda"
@@ -328,9 +443,31 @@ run "lambda_target_type_integration" {
   }
 }
 
+run "lambda_target_type_integration_cleanup" {
+  command = destroy
+
+  variables {
+    project_name        = "lambda"
+    environment         = "dev"
+    vpc_id              = var.vpc_id
+    subnet_ids          = var.subnet_ids
+    ssl_certificate_arn = var.ssl_certificate_arn
+
+    # Lambda target type
+    target_type = "lambda"
+
+    common_tags = {
+      Project     = "lambda"
+      Environment = "dev"
+      ManagedBy   = "terraform"
+      TestType    = "integration"
+    }
+  }
+}
+
 # Test 6: ALB with custom names
 run "custom_names_integration" {
-  command = plan
+  command = apply
 
   variables {
     project_name        = "custom"
@@ -367,9 +504,32 @@ run "custom_names_integration" {
   }
 }
 
+run "custom_names_integration_cleanup" {
+  command = destroy
+
+  variables {
+    project_name        = "custom"
+    environment         = "dev"
+    vpc_id              = var.vpc_id
+    subnet_ids          = var.subnet_ids
+    ssl_certificate_arn = var.ssl_certificate_arn
+
+    # Custom names
+    alb_name          = "my-custom-alb"
+    target_group_name = "my-custom-tg"
+
+    common_tags = {
+      Project     = "custom"
+      Environment = "dev"
+      ManagedBy   = "terraform"
+      TestType    = "integration"
+    }
+  }
+}
+
 # Test 7: ALB with additional security groups
 run "additional_security_groups_integration" {
-  command = plan
+  command = apply
 
   variables {
     project_name        = "security"
@@ -410,9 +570,31 @@ run "additional_security_groups_integration" {
   }
 }
 
+run "additional_security_groups_integration_cleanup" {
+  command = destroy
+
+  variables {
+    project_name        = "security"
+    environment         = "dev"
+    vpc_id              = var.vpc_id
+    subnet_ids          = var.subnet_ids
+    ssl_certificate_arn = var.ssl_certificate_arn
+
+    # Additional security groups
+    additional_security_group_ids = ["sg-additional-1", "sg-additional-2"]
+
+    common_tags = {
+      Project     = "security"
+      Environment = "dev"
+      ManagedBy   = "terraform"
+      TestType    = "integration"
+    }
+  }
+}
+
 # Test 8: Full outputs validation
 run "full_outputs_validation" {
-  command = plan
+  command = apply
 
   variables {
     project_name        = "output"
@@ -532,5 +714,23 @@ run "full_outputs_validation" {
   assert {
     condition     = output.listener_arn == aws_lb_listener.https.arn
     error_message = "Listener ARN (backward compatibility) should match HTTPS listener ARN"
+  }
+}
+
+run "full_outputs_validation_cleanup" {
+  command = destroy
+
+  variables {
+    project_name        = "output"
+    environment         = "dev"
+    vpc_id              = var.vpc_id
+    subnet_ids          = var.subnet_ids
+    ssl_certificate_arn = var.ssl_certificate_arn
+    common_tags = {
+      Project     = "output"
+      Environment = "dev"
+      ManagedBy   = "terraform"
+      TestType    = "integration"
+    }
   }
 }

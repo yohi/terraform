@@ -594,7 +594,7 @@ run "mock_production_settings" {
   variables {
     project_name  = "test"
     environment   = "prd"
-    app           = "prod-app"
+    app           = "prd-app"
     instance_type = "t3.medium"
     volume_size   = 50
   }

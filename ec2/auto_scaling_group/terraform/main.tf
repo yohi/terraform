@@ -130,7 +130,7 @@ locals {
   }
 
   # 環境固有タグ
-  env_specific_tags = var.environment == "prod" ? {
+  env_specific_tags = var.environment == "prd" ? {
     "CriticalityLevel" = "high"
     "AuditRequired"    = "yes"
     "RetentionPeriod"  = "7-years"

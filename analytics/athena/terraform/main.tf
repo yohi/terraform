@@ -266,7 +266,7 @@ locals {
 
   # 環境固有タグ
   env_tags = {
-    "CriticalityLevel" = var.environment == "prod" ? "high" : "medium"
+    "CriticalityLevel" = var.environment == "prd" ? "high" : "medium"
   }
 
   # サービス固有タグ
