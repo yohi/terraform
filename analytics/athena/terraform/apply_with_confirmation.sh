@@ -1,23 +1,23 @@
 #!/bin/bash
 
-# Terraform Apply with AWS Account Confirmation Script
-# This script displays AWS account information and asks for confirmation before running terraform apply
+# AWS アカウント確認付き Terraform Apply スクリプト
+# このスクリプトは、terraform apply を実行する前に AWS アカウント情報を表示し、確認を求めます
 
 set -euo pipefail
 
-# Configuration
+# 設定
 readonly SCRIPT_NAME="$(basename "$0")"
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Colors for output
+# 出力用の色
 readonly RED='\033[0;31m'
 readonly GREEN='\033[0;32m'
 readonly YELLOW='\033[1;33m'
 readonly BLUE='\033[0;34m'
 readonly BOLD='\033[1m'
-readonly NC='\033[0m' # No Color
+readonly NC='\033[0m' # カラーなし
 
-# Functions
+# 関数
 print_colored() {
     local color=$1
     shift
@@ -33,29 +33,29 @@ print_header() {
 
 show_help() {
     cat << EOF
-Usage: $SCRIPT_NAME [OPTIONS]
+使用法: $SCRIPT_NAME [OPTIONS]
 
-Terraform apply with AWS account confirmation and guided variable input.
+AWSアカウント確認とガイド付き変数入力を伴うTerraform apply。
 
 OPTIONS:
-    -h, --help          Show this help message
-    -y, --yes           Skip AWS confirmation (use with caution)
-    -a, --auto-approve  Skip terraform apply confirmation (use with caution)
-    -q, --quiet         Suppress non-essential output
-    --                  Pass remaining arguments to terraform apply
+    -h, --help          このヘルプメッセージを表示
+    -y, --yes           AWS確認をスキップ（注意して使用）
+    -a, --auto-approve  terraform apply確認をスキップ（注意して使用）
+    -q, --quiet         重要でない出力を抑制
+    --                  残りの引数をterraform applyに渡す
 
 EXAMPLES:
-    $SCRIPT_NAME                    # Interactive mode with confirmation
-    $SCRIPT_NAME --yes              # Skip AWS confirmation
-    $SCRIPT_NAME --auto-approve     # Skip terraform apply confirmation
-    $SCRIPT_NAME -- plan.out        # Apply from saved plan file
+    $SCRIPT_NAME                    # 確認付きインタラクティブモード
+    $SCRIPT_NAME --yes              # AWS確認をスキップ
+    $SCRIPT_NAME --auto-approve     # terraform apply確認をスキップ
+    $SCRIPT_NAME -- plan.out        # 保存された計画ファイルから適用
 
 ENVIRONMENT VARIABLES:
-    TERRAFORM_AWS_ACCOUNT_CONFIRMED=true   Skip AWS confirmation
+    TERRAFORM_AWS_ACCOUNT_CONFIRMED=true   AWS確認をスキップ
 
 WARNING:
-    This script will make changes to your AWS infrastructure.
-    Always run 'terraform plan' first to review changes.
+    このスクリプトは、あなたのAWSインフラストラクチャに変更を加えます。
+    常に変更を確認するため、最初に 'terraform plan' を実行してください。
 
 EOF
 }
@@ -92,7 +92,7 @@ validate_aws_credentials() {
 display_aws_info() {
     local aws_identity=$1
 
-    # Extract information safely with jq
+    # jqで情報を安全に抽出
     local account_id user_id arn
     account_id=$(echo "$aws_identity" | jq -r '.Account // "N/A"')
     user_id=$(echo "$aws_identity" | jq -r '.UserId // "N/A"')
@@ -104,7 +104,7 @@ display_aws_info() {
     echo "  User ID:    $user_id"
     echo "  ARN:        $arn"
 
-    # Try to get account name
+    # アカウント名を取得
     local account_name
     if account_name=$(aws organizations describe-account --account-id "$account_id" --query 'Account.Name' --output text 2>/dev/null) && [ "$account_name" != "None" ]; then
         echo "  Account Name: $account_name"
@@ -118,7 +118,7 @@ display_aws_info() {
 get_user_confirmation() {
     local skip_confirmation=${1:-false}
 
-    # Check environment variable
+    # 環境変数をチェック
     if [ "${TERRAFORM_AWS_ACCOUNT_CONFIRMED:-}" = "true" ] || [ "$skip_confirmation" = true ]; then
         print_colored "$GREEN" "✅ AWS account confirmation skipped"
         return 0
@@ -162,7 +162,7 @@ validate_input() {
         return 1
     fi
 
-    # Additional validation patterns
+    # 追加の検証パターン
     case $var_name in
         "project"|"env")
             if [[ ! $var_value =~ ^[a-zA-Z0-9_-]+$ ]]; then
@@ -232,12 +232,12 @@ run_terraform_apply() {
         terraform apply
     )
 
-    # Add auto-approve if requested
+    # 要求された場合はauto-approveを追加
     if [ "$auto_approve" = true ]; then
         terraform_cmd+=(-auto-approve)
     fi
 
-    # Add variables if not using a plan file
+    # 計画ファイルを使用していない場合は変数を追加
     local has_plan_file=false
     for arg in "${additional_args[@]}"; do
         if [[ -f "$arg" ]]; then
@@ -259,7 +259,7 @@ run_terraform_apply() {
     echo "Executing: ${terraform_cmd[*]}"
     echo ""
 
-    # Additional warning for destructive operations
+    # 破壊的な操作に対する追加の警告
     if [ "$auto_approve" = false ] && [ "$has_plan_file" = false ]; then
         print_colored "$YELLOW" "⚠️  Terraform will prompt for final confirmation before applying changes."
         echo ""
@@ -274,7 +274,7 @@ main() {
     local quiet_mode=false
     local terraform_args=()
 
-    # Parse command line arguments
+    # コマンドライン引数を解析
     while [[ $# -gt 0 ]]; do
         case $1 in
             -h|--help)
@@ -299,14 +299,14 @@ main() {
                 break
                 ;;
             *)
-                # Assume it's a terraform argument
+                # terraformの引数と仮定
                 terraform_args+=("$1")
                 shift
                 ;;
         esac
     done
 
-    # Main execution flow
+    # メイン実行フロー
     if [ "$quiet_mode" = false ]; then
         print_header
     fi
@@ -322,7 +322,7 @@ main() {
 
     get_user_confirmation "$skip_confirmation"
 
-    # Only collect variables if not using a plan file
+    # 計画ファイルを使用していない場合のみ変数を収集
     local has_plan_file=false
     for arg in "${terraform_args[@]}"; do
         if [[ -f "$arg" ]]; then
@@ -341,7 +341,7 @@ main() {
     run_terraform_apply "$auto_approve" "${terraform_args[@]}"
 }
 
-# Error handling
+# エラーハンドリング
 handle_error() {
     local exit_code=$?
     local line_number=$1
@@ -351,5 +351,5 @@ handle_error() {
 
 trap 'handle_error $LINENO' ERR
 
-# Execute main function
+# メイン関数を実行
 main "$@"

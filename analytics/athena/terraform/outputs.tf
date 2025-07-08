@@ -1,4 +1,4 @@
-# AWS Account Information (for validation before applying changes)
+# AWSアカウント情報（変更適用前の検証用）
 output "aws_account_id" {
   description = "Current AWS Account ID"
   value       = data.aws_caller_identity.current.account_id
@@ -123,7 +123,7 @@ output "created_named_queries" {
   )
 }
 
-# Outputs for Athena Analytics Infrastructure
+# Athena Analytics インフラストラクチャの出力
 # index.htmlの手順に準拠した構成の出力情報
 
 # AWS Glue Database情報（手順1）

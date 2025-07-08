@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Terraform Plan with AWS Account Confirmation Script
-# This script displays AWS account information and asks for confirmation before running terraform plan
+# AWS アカウント確認付き Terraform Plan スクリプト
+# このスクリプトは、terraform plan を実行する前に AWS アカウント情報を表示し、確認を求めます
 
 set -e
 
@@ -10,19 +10,19 @@ echo "=========================================="
 echo "🔍 AWS Account Information Validation"
 echo "=========================================="
 
-# Check if AWS CLI is configured
+# AWS CLI が設定されているかチェック
 if ! command -v aws &> /dev/null; then
     echo "❌ AWS CLI is not installed or not in PATH"
     exit 1
 fi
 
-# Check if jq is installed
+# jq がインストールされているかチェック
 if ! command -v jq &> /dev/null; then
     echo "❌ jq is not installed or not in PATH"
     exit 1
 fi
 
-# Get current AWS identity
+# 現在の AWS アイデンティティを取得
 echo "Getting current AWS identity..."
 aws_identity=$(aws sts get-caller-identity 2>/dev/null)
 
@@ -32,7 +32,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Extract information
+# 情報を抽出
 account_id=$(echo "$aws_identity" | jq -r '.Account')
 user_id=$(echo "$aws_identity" | jq -r '.UserId')
 arn=$(echo "$aws_identity" | jq -r '.Arn')
@@ -43,7 +43,7 @@ echo "  Account ID: $account_id"
 echo "  User ID:    $user_id"
 echo "  ARN:        $arn"
 
-# Try to get account name (if part of organization)
+# アカウント名を取得（組織の一部の場合）
 account_name=$(aws organizations describe-account --account-id "$account_id" --query 'Account.Name' --output text 2>/dev/null || echo "N/A")
 if [ "$account_name" != "N/A" ]; then
     echo "  Account Name: $account_name"
@@ -56,7 +56,7 @@ echo ""
 echo "⚠️  Please verify this is the correct AWS account!"
 echo ""
 
-# Ask for confirmation
+# 確認を求める
 while true; do
     read -p "Do you want to proceed with terraform plan? (Y/N): " -n 1 -r
     echo ""
@@ -81,11 +81,11 @@ while true; do
     esac
 done
 
-# Collect variables in the desired order
+# 必要な変数を順番に収集
 echo "📝 Please provide the following variables in order:"
 echo ""
 
-# 1. Project
+# 1. プロジェクト
 while true; do
     read -p "1. Project name (e.g., rcs, myapp): " project
     if [ -n "$project" ]; then
@@ -95,7 +95,7 @@ while true; do
     fi
 done
 
-# 2. Environment
+# 2. 環境
 while true; do
     read -p "2. Environment name (e.g., prd, stg, dev): " environment
     if [ -n "$environment" ]; then
@@ -105,7 +105,7 @@ while true; do
     fi
 done
 
-# 3. S3 Logs Prefix
+# 3. S3 ログプレフィックス
 while true; do
     read -p "3. S3 logs prefix (e.g., firelens/firelens/fluent-bit-logs): " logs_s3_prefix
     if [ -n "$logs_s3_prefix" ]; then
@@ -122,7 +122,7 @@ echo "   Environment: $environment"
 echo "   S3 Logs Prefix: $logs_s3_prefix"
 echo ""
 
-# Run terraform plan with collected variables
+# 収集した変数でterraform planを実行
 echo "Executing: terraform plan -var=\"project=$project\" -var=\"environment=$environment\" -var=\"logs_s3_prefix=$logs_s3_prefix\" $@"
 echo ""
 terraform plan -var="project=$project" -var="environment=$environment" -var="logs_s3_prefix=$logs_s3_prefix" "$@"

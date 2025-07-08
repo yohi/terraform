@@ -1,18 +1,18 @@
 #!/bin/bash
 
-# Check AWS Account Information Script
-# This script helps verify which AWS account you're working with before running Terraform
+# AWS アカウント情報確認スクリプト
+# このスクリプトは、Terraform を実行する前にどの AWS アカウントを使用しているかを確認するのに役立ちます
 
-set -euo pipefail  # Stricter error handling
+set -euo pipefail  # より厳格なエラーハンドリング
 
-# Colors for better output
+# 出力をより見やすくするための色
 readonly RED='\033[0;31m'
 readonly GREEN='\033[0;32m'
 readonly YELLOW='\033[1;33m'
 readonly BLUE='\033[0;34m'
-readonly NC='\033[0m' # No Color
+readonly NC='\033[0m' # 色なし
 
-# Function to print colored output
+# 色付き出力を行う関数
 print_status() {
     local color=$1
     local message=$2
@@ -70,7 +70,7 @@ get_aws_identity() {
 display_account_info() {
     local aws_identity=$1
 
-    # Extract information safely
+    # 情報を安全に抽出
     local account_id user_id arn
     account_id=$(echo "$aws_identity" | jq -r '.Account // "N/A"')
     user_id=$(echo "$aws_identity" | jq -r '.UserId // "N/A"')
@@ -82,7 +82,7 @@ display_account_info() {
     echo "   ARN:        $arn"
     echo ""
 
-    # Try to get account name (if part of organization)
+    # アカウント名を取得（組織の一部の場合）
     print_status "$BLUE" "🔍 Checking AWS account name..."
     local account_name
     if account_name=$(aws organizations describe-account --account-id "$account_id" --query 'Account.Name' --output text 2>/dev/null) && [ "$account_name" != "None" ]; then
@@ -128,5 +128,5 @@ main() {
     show_terraform_commands
 }
 
-# Execute main function
+# メイン関数を実行
 main "$@"

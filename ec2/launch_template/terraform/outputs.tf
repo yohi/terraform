@@ -46,7 +46,7 @@ output "security_group_name" {
   value       = aws_security_group.main.name
 }
 
-# Parameter Store Parameter Names
+# Parameter Store パラメータ名
 output "parameter_store_names" {
   description = "作成されたParameter Storeパラメータ名のリスト"
   sensitive   = true

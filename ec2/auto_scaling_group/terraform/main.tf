@@ -1,5 +1,5 @@
 # ==================================================
-# EC2 Auto Scaling Group Terraform Module
+# EC2 Auto Scaling Group Terraform モジュール
 # ==================================================
 #
 # このモジュールは AWS Auto Scaling Group とその関連リソースを管理します
@@ -207,7 +207,7 @@ resource "aws_sns_topic" "asg_notifications" {
   )
 }
 
-# SNS Topic Subscription (Email)
+# SNS Topic サブスクリプション (Email)
 resource "aws_sns_topic_subscription" "email_notifications" {
   count = var.enable_notifications && length(local.notification_endpoints) > 0 ? length(local.notification_endpoints) : 0
 
@@ -326,7 +326,7 @@ resource "aws_autoscaling_notification" "asg_notifications" {
 }
 
 # ==================================================
-# CloudWatch Alarms
+# CloudWatch アラーム
 # ==================================================
 
 # CPU使用率アラーム（High）
@@ -468,7 +468,7 @@ resource "aws_autoscaling_policy" "scale_down" {
 }
 
 # ==================================================
-# CloudWatch Alarm for Auto Scaling
+# Auto Scaling用 CloudWatch アラーム
 # ==================================================
 
 # スケールアップ用CloudWatch Alarm

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Input parameter: database name
+# 入力パラメータ: データベース名
 DATABASE_NAME="$1"
 
 if [ -z "$DATABASE_NAME" ]; then
@@ -8,13 +8,13 @@ if [ -z "$DATABASE_NAME" ]; then
     exit 1
 fi
 
-# Check if AWS credentials are configured
+# AWS認証情報が設定されているかチェック
 if ! aws sts get-caller-identity >/dev/null 2>&1; then
     echo '{"exists": "false", "error": "AWS credentials not configured"}' >&2
     exit 1
 fi
 
-# Check if the database exists
+# データベースが存在するかチェック
 if aws glue get-database --name "$DATABASE_NAME" >/dev/null 2>&1; then
     echo '{"exists": "true"}'
 else
