@@ -1,0 +1,475 @@
+# Terraform テストコード開発ガイド
+
+## 概要
+このルールは、Terraformモジュールの品質を確保するためのテストコード開発ガイドです。
+プロジェクトで実装されているテストパターンとベストプラクティスを基に作成されています。
+
+## 必須テストファイル構成
+
+### 1. 各Terraformモジュールには以下のテストファイルを必ず含める
+```
+terraform/
+├── main.tf
+├── variables.tf
+├── outputs.tf
+├── versions.tf
+├── terraform.tfvars.example
+├── basic.tftest.hcl          # 基本機能テスト
+├── validation.tftest.hcl     # 入力検証テスト
+├── integration.tftest.hcl    # 統合テスト
+└── mocks.tftest.hcl          # モック設定
+```
+
+### 2. テストファイルの役割分担
+
+#### basic.tftest.hcl - 基本機能テスト
+- **目的**: モジュールの基本機能と設定を検証
+- **実行方法**: `terraform test basic.tftest.hcl`
+- **特徴**:
+  - モックプロバイダーを使用
+  - AWS認証情報不要
+  - 高速実行
+  - 複数のテストケースを含む
+
+```hcl
+# テンプレート例
+# Using mock provider for testing
+provider "aws" {
+  access_key                  = "mock_access_key"
+  secret_key                  = "mock_secret_key"
+  region                      = "ap-northeast-1"
+  skip_credentials_validation = true
+  skip_metadata_api_check     = true
+  skip_requesting_account_id  = true
+}
+
+# Common variables for all tests
+variables {
+  project_name = "test-project"
+  environment  = "dev"
+  app          = "webapp"
+
+  common_tags = {
+    Project     = "test-project"
+    Environment = "dev"
+    Purpose     = "testing"
+    ManagedBy   = "Terraform"
+  }
+}
+
+# Test basic resource creation
+run "basic_resource_creation" {
+  command = plan
+
+  variables {
+    # テスト固有の変数
+    resource_name = "test-resource"
+    instance_type = "t3.micro"
+  }
+
+  assert {
+    condition     = aws_example_resource.main != null
+    error_message = "Expected resource to be created"
+  }
+
+  assert {
+    condition     = aws_example_resource.main.name == "test-resource"
+    error_message = "Resource name should match expected value"
+  }
+}
+```
+
+#### validation.tftest.hcl - 入力検証テスト
+- **目的**: 変数のバリデーションルールをテスト
+- **実行方法**: `terraform test validation.tftest.hcl`
+- **特徴**:
+  - 有効な値のテスト
+  - 無効な値のテスト（expect_failures使用）
+  - 境界値テスト
+
+```hcl
+# 有効な値のテスト
+run "valid_environment_dev" {
+  command = plan
+
+  variables {
+    environment = "dev"
+    # その他の必須変数
+  }
+
+  assert {
+    condition     = var.environment == "dev"
+    error_message = "Environment dev should be valid"
+  }
+}
+
+# 無効な値のテスト
+run "invalid_environment_production" {
+  command = plan
+
+  variables {
+    environment = "production"  # 無効な値
+    # その他の必須変数
+  }
+
+  expect_failures = [
+    "var.environment",
+  ]
+}
+```
+
+#### integration.tftest.hcl - 統合テスト
+- **目的**: 実際のAWSリソースでの動作確認
+- **実行方法**: `terraform test integration.tftest.hcl`
+- **特徴**:
+  - 実際のAWS認証情報が必要
+  - リソース作成とクリーンアップ
+  - コストが発生する可能性
+
+```hcl
+# 実際のAWSプロバイダーを使用
+provider "aws" {
+  region = "ap-northeast-1"
+  # 実際のAWS認証情報を使用
+}
+
+# タイムスタンプを一度だけ生成してローカル変数として保存
+locals {
+  test_timestamp = formatdate("YYYY-MM-DD-hhmm", timestamp())
+}
+
+# 統合テスト - リソース作成
+run "create_actual_resource" {
+  command = apply
+
+  variables {
+    # 実際の環境固有の値
+    resource_name = "test-resource-${local.test_timestamp}"
+    # その他の変数
+  }
+
+  assert {
+    condition     = output.resource_arn != null
+    error_message = "Resource ARN should not be null"
+  }
+}
+
+# 統合テスト - クリーンアップ
+run "cleanup_actual_resource" {
+  command = destroy
+
+  variables {
+    # 同じ変数を使用（同じタイムスタンプを保証）
+    resource_name = "test-resource-${local.test_timestamp}"
+  }
+}
+```
+
+#### mocks.tftest.hcl - モック設定
+- **目的**: テスト用のモックプロバイダー設定
+- **使用方法**: 他のテストファイルから参照
+- **特徴**:
+  - 一貫したモックデータ
+  - データソースのモック
+  - リソースのデフォルト値
+
+```hcl
+mock_provider "aws" {
+  alias = "fake"
+
+  mock_data "aws_caller_identity" {
+    defaults = {
+      account_id = "123456789012"
+      arn        = "arn:aws:iam::123456789012:user/test-user"
+      user_id    = "AIDACKCEVSQ6C2EXAMPLE"
+    }
+  }
+
+  mock_data "aws_region" {
+    defaults = {
+      name        = "ap-northeast-1"
+      description = "Asia Pacific (Tokyo)"
+    }
+  }
+
+  mock_resource "aws_example_resource" {
+    defaults = {
+      arn  = "arn:aws:service:ap-northeast-1:123456789012:resource/test-resource"
+      name = "test-resource"
+      tags = {}
+    }
+  }
+}
+```
+
+## テストケース設計原則
+
+### 1. テストケースの命名規則
+- **基本パターン**: `run "test_purpose_description"`
+- **例**:
+  - `run "basic_resource_creation"`
+  - `run "valid_environment_dev"`
+  - `run "invalid_cpu_value"`
+  - `run "auto_generated_name"`
+
+### 2. アサーションの書き方
+```hcl
+# 良い例 - 具体的で明確
+assert {
+  condition     = aws_ecs_service.main.name == "expected-service-name"
+  error_message = "ECS service name should be 'expected-service-name'"
+}
+
+# 良い例 - 正規表現を使用
+assert {
+  condition     = can(regex("^test-cluster-", output.cluster_name))
+  error_message = "Cluster name should start with test-cluster-"
+}
+
+# 良い例 - null チェック
+assert {
+  condition     = output.resource_arn != null
+  error_message = "Resource ARN should not be null"
+}
+```
+
+### 3. 変数の設定パターン
+```hcl
+# 共通変数の定義
+variables {
+  project_name = "test-project"
+  environment  = "dev"
+  app          = "webapp"
+
+  common_tags = {
+    Project     = "test-project"
+    Environment = "dev"
+    Purpose     = "testing"
+    ManagedBy   = "Terraform"
+  }
+}
+
+# テストケース固有の変数
+run "specific_test" {
+  command = plan
+
+  variables {
+    # 共通変数に加えて、テスト固有の変数を設定
+    specific_setting = "test-value"
+    instance_type    = "t3.micro"
+  }
+}
+```
+
+## テスト実行戦略
+
+### 1. テスト実行の順序
+```bash
+# 1. 基本テスト（高速、モック使用）
+terraform test basic.tftest.hcl
+
+# 2. バリデーションテスト（高速、モック使用）
+terraform test validation.tftest.hcl
+
+# 3. 統合テスト（低速、実際のAWS使用）
+terraform test integration.tftest.hcl
+```
+
+### 2. CI/CDでのテスト実行
+```bash
+# 単体テスト（モック使用）
+terraform test basic.tftest.hcl validation.tftest.hcl
+
+# 統合テスト（実際のAWS使用、本番環境以外）
+if [ "$ENVIRONMENT" != "prd" ]; then
+  terraform test integration.tftest.hcl
+fi
+```
+
+### 3. ローカル開発でのテスト
+```bash
+# 全テストの実行
+terraform test
+
+# 特定のテストのみ実行
+terraform test basic.tftest.hcl
+
+# 特定のテストケースのみ実行
+terraform test -filter="basic_resource_creation"
+```
+
+## テストデータ管理
+
+### 1. モックデータの一貫性
+- **アカウントID**: `123456789012`
+- **リージョン**: `ap-northeast-1`
+- **VPC ID**: `vpc-12345678`
+- **サブネットID**: `subnet-12345678`, `subnet-87654321`
+
+### 2. テスト用のタグ戦略
+```hcl
+common_tags = {
+  Project     = "test-project"
+  Environment = "dev"
+  Purpose     = "testing"
+  ManagedBy   = "Terraform"
+  TestType    = "unit"        # または "integration"
+}
+```
+
+### 3. 環境変数の使用
+```hcl
+# 統合テスト用の環境固有の値
+variable "vpc_id" {
+  description = "VPC ID for testing - must be provided via environment variable"
+  type        = string
+  default     = ""
+
+  validation {
+    condition     = length(var.vpc_id) > 0
+    error_message = "VPC ID must not be empty. Please provide via TF_VAR_vpc_id."
+  }
+}
+```
+
+## エラーハンドリング
+
+### 1. 期待される失敗のテスト
+```hcl
+run "invalid_input_test" {
+  command = plan
+
+  variables {
+    invalid_parameter = "bad-value"
+  }
+
+  expect_failures = [
+    "var.invalid_parameter",
+  ]
+}
+```
+
+### 2. 条件付きテスト
+```hcl
+run "conditional_test" {
+  command = plan
+
+  variables {
+    enable_feature = true
+  }
+
+  assert {
+    condition = var.enable_feature ? aws_example_resource.conditional != null : true
+    error_message = "Conditional resource should be created when feature is enabled"
+  }
+}
+
+# 代替案: can()関数を使用した安全な存在チェック
+run "conditional_test_with_can" {
+  command = plan
+
+  variables {
+    enable_feature = true
+  }
+
+  assert {
+    condition = var.enable_feature ? can(aws_example_resource.conditional.id) : true
+    error_message = "Conditional resource should be created when feature is enabled"
+  }
+}
+```
+
+## パフォーマンス最適化
+
+### 1. モックの活用
+- 単体テストでは必ずモックプロバイダーを使用
+- 外部依存を最小限に抑制
+- 高速なテスト実行を実現
+
+### 2. 並列実行の考慮
+- テストケース間の依存関係を避ける
+- 独立したテストケースを設計
+- 共有リソースの競合を防ぐ
+
+### 3. リソースクリーンアップ
+```hcl
+# 統合テストでは必ずクリーンアップを実行
+run "cleanup_test" {
+  command = destroy
+
+  variables {
+    # 作成時と同じ変数を使用
+  }
+}
+```
+
+## テストカバレッジ
+
+### 1. 必須テスト項目
+- [ ] 基本的なリソース作成
+- [ ] 出力値の検証
+- [ ] タグの適用確認
+- [ ] 変数バリデーション
+- [ ] エラーケースの処理
+- [ ] 条件付きリソースの動作
+
+### 2. 推奨テスト項目
+- [ ] 複数の設定パターン
+- [ ] 境界値テスト
+- [ ] デフォルト値の確認
+- [ ] 名前生成ロジック
+- [ ] セキュリティ設定
+- [ ] 依存関係の確認
+
+## ベストプラクティス
+
+### 1. テストコードの品質
+- 明確で読みやすいテストケース名
+- 具体的なエラーメッセージ
+- 適切なアサーションの粒度
+- 重複のないテストケース
+
+### 2. メンテナンス性
+- 共通変数の活用
+- モック設定の再利用
+- テストデータの一貫性
+- ドキュメントの更新
+
+### 3. セキュリティ
+- 実際の認証情報をコードに含めない
+- 環境変数の適切な使用
+- テスト用リソースの適切な権限設定
+- クリーンアップの確実な実行
+
+## トラブルシューティング
+
+### 1. よくある問題と解決策
+```bash
+# モックプロバイダーの設定エラー
+# → mocks.tftest.hcl の設定を確認
+
+# 統合テストの認証エラー
+# → AWS認証情報の設定を確認
+export AWS_PROFILE=test-profile
+
+# テストの実行時間が長い
+# → モックテストと統合テストを分離
+```
+
+### 2. デバッグ方法
+```bash
+# 詳細なログ出力
+TF_LOG=DEBUG terraform test
+
+# 特定のテストケースのみ実行
+terraform test -filter="specific_test_name"
+
+# プランの内容確認
+terraform test -verbose
+```
+
+このガイドに従って、一貫性のある高品質なTerraformテストコードを作成してください。
+description:
+globs:
+alwaysApply: false
+---
