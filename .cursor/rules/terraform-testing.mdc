@@ -1,3 +1,9 @@
+---
+description: Terraformモジュールの品質を確保するためのテストコード開発ガイド。基本機能テスト、入力検証テスト、統合テスト、モック設定の4つのテストファイル構成とベストプラクティスを定義。
+globs:
+alwaysApply: false
+---
+
 # Terraform テストコード開発ガイド
 
 ## 概要
@@ -469,7 +475,3 @@ terraform test -verbose
 ```
 
 このガイドに従って、一貫性のある高品質なTerraformテストコードを作成してください。
-description:
-globs:
-alwaysApply: false
----
