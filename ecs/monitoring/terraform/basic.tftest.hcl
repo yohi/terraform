@@ -2,14 +2,10 @@
 # ECS Monitoring モジュール - 基本機能テスト
 # ==================================================
 
-# モックプロバイダーを使用してテストを実行
-provider "aws" {
-  access_key                  = "mock_access_key"
-  secret_key                  = "mock_secret_key"
-  region                      = "ap-northeast-1"
-  skip_credentials_validation = true
-  skip_metadata_api_check     = true
-  skip_requesting_account_id  = true
+# モックプロバイダーを使用してテストを実行（外部ネットワーク通信を完全にブロック）
+mock_provider "aws" {
+  alias  = "mock"
+  source = "hashicorp/aws"
 }
 
 # 共通変数の定義
