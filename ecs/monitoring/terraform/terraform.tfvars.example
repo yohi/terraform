@@ -1,0 +1,71 @@
+# ==================================================
+# 基本設定
+# ==================================================
+
+# AWSリージョン
+aws_region = "ap-northeast-1"
+
+# プロジェクト名
+project_name = "my-project"
+
+# 環境名 (prd, rls, stg, dev)
+environment = "dev"
+
+# アプリケーション名（オプション）
+app = "web"
+
+# 共通タグ
+common_tags = {
+  Environment = "dev"
+  Project     = "my-project"
+  Application = "web"
+  Owner       = "team@example.com"
+}
+
+# ==================================================
+# ECSエージェント監視設定
+# ==================================================
+
+# リソース名のプレフィックス（オプション）
+# 指定しない場合は project_name-environment の形式で自動生成される
+# resource_name_prefix = "my-custom-prefix"
+
+# 監視対象のECSクラスターARN
+cluster_arn = "arn:aws:ecs:ap-northeast-1:123456789012:cluster/my-cluster"
+
+# Slack Bot Token を格納している AWS Secrets Manager のシークレット ARN
+slack_token_secret_arn = "arn:aws:secretsmanager:ap-northeast-1:123456789012:secret:slack-bot-token-AbCdEf"
+
+# Slack通知先チャンネル名 (例: #alerts, @user)
+slack_channel = "#alerts"
+
+# ==================================================
+# CloudWatch ログ設定
+# ==================================================
+
+# CloudWatchログ グループ名（オプション）
+# 指定しない場合は自動生成される
+# log_group_name = "/aws/events/custom-log-group"
+
+# CloudWatchログの保持期間（日）
+log_retention_in_days = 30
+
+# ==================================================
+# Lambda設定
+# ==================================================
+
+# Lambda関数のタイムアウト（秒）
+lambda_timeout = 60
+
+# Lambda関数のランタイム
+lambda_runtime = "python3.9"
+
+# ==================================================
+# フィルタリング設定
+# ==================================================
+
+# CloudWatch ログ サブスクリプション フィルターのパターン
+subscription_filter_pattern = "{ $.detail.agentConnected is false }"
+
+# ECSエージェント監視を有効にするか
+enable_monitoring = true
