@@ -20,6 +20,16 @@ locals {
 
   # サブスクリプション フィルター名
   subscription_filter_name = "${local.name_prefix}-ecs-agent-monitor-filter"
+
+  # 共通タグ（必須タグを含む）
+  common_tags = merge(
+    {
+      Project     = var.project_name
+      Environment = var.environment
+      ManagedBy   = "Terraform"
+    },
+    var.common_tags
+  )
 }
 
 # ==================================================
@@ -50,10 +60,9 @@ resource "aws_cloudwatch_event_rule" "ecs_instance_state_change" {
   state = "ENABLED"
 
   tags = merge(
-    var.common_tags,
+    local.common_tags,
     {
-      Name      = local.eventbridge_rule_name
-      ManagedBy = "Terraform"
+      Name = local.eventbridge_rule_name
     }
   )
 }
@@ -68,10 +77,9 @@ resource "aws_cloudwatch_log_group" "ecs_agent_monitor" {
   retention_in_days = var.log_retention_in_days
 
   tags = merge(
-    var.common_tags,
+    local.common_tags,
     {
-      Name      = local.log_group_name
-      ManagedBy = "Terraform"
+      Name = local.log_group_name
     }
   )
 }
@@ -109,10 +117,9 @@ resource "aws_iam_role" "lambda_role" {
   })
 
   tags = merge(
-    var.common_tags,
+    local.common_tags,
     {
-      Name      = local.lambda_role_name
-      ManagedBy = "Terraform"
+      Name = local.lambda_role_name
     }
   )
 }
@@ -205,10 +212,9 @@ resource "aws_lambda_function" "ecs_agent_monitor" {
   }
 
   tags = merge(
-    var.common_tags,
+    local.common_tags,
     {
-      Name      = local.lambda_function_name
-      ManagedBy = "Terraform"
+      Name = local.lambda_function_name
     }
   )
 }

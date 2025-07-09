@@ -46,7 +46,7 @@ vi terraform.tfvars
 project_name = "your-project"
 environment  = "dev"
 cluster_arn  = "arn:aws:ecs:region:account:cluster/cluster-name"
-slack_token  = "xoxb-your-slack-bot-token-here"
+slack_token_secret_arn = "arn:aws:secretsmanager:region:account:secret:slack-token-secret-name"
 
 # オプション設定
 slack_channel         = "#alerts"
@@ -79,12 +79,12 @@ terraform destroy
 
 ### 基本設定
 
-| パラメータ     | 説明                                     | デフォルト値 | 必須 |
-| -------------- | ---------------------------------------- | ------------ | ---- |
-| `project_name` | プロジェクト名                           | -            | ✓    |
-| `environment`  | 環境名 (prd, rls, stg, dev)              | -            | ✓    |
-| `cluster_arn`  | 監視対象のECSクラスターARN               | -            | ✓    |
-| `slack_token`  | Slack Bot Token（xoxb-で始まるトークン） | -            | ✓    |
+| パラメータ               | 説明                                                                  | デフォルト値 | 必須 |
+| ------------------------ | --------------------------------------------------------------------- | ------------ | ---- |
+| `project_name`           | プロジェクト名                                                        | -            | ✓    |
+| `environment`            | 環境名 (prd, rls, stg, dev)                                           | -            | ✓    |
+| `cluster_arn`            | 監視対象のECSクラスターARN                                            | -            | ✓    |
+| `slack_token_secret_arn` | Slack Bot Token を格納している AWS Secrets Manager のシークレット ARN | -            | ✓    |
 
 ### オプション設定
 
